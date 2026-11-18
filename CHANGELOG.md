@@ -12,3 +12,7 @@ All notable changes are listed here. The format follows
   `Violation`, `RulePack`) and `SyntaxIndex`, which answers scopes, signatures,
   enclosing types, inheritance, calls, references, closure invocations, assignment
   targets and local variables for one file.
+- `LintableEngine`: `.lintable.yml` configuration, file discovery with `**` globs,
+  parallel linting, `// lintable:` directives with required reasons, baselines, a
+  per-file cache, and the `xcode`, `summary`, `json`, `sarif` and `github` reporters.
+- `lintable` CLI: `lint`, `baseline`, `rules`, `init`, `version`.

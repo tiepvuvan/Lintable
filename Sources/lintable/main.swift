@@ -1,3 +1,4 @@
-import LintableKit
+import LintableCommand
+import LintableRules
 
-print(LintableVersion.current)
+await LintableCommand.main(rulePacks: [BuiltInRules.self])
