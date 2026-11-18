@@ -1,0 +1,37 @@
+name: Bug report
+description: Lintable reported something it shouldn't, missed something, or failed.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `lintable version`.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Config
+      description: The relevant part of `.lintable.yml`.
+      render: yaml
+  - type: textarea
+    id: code
+    attributes:
+      label: Code
+      description: The smallest Swift code that shows the problem.
+      render: swift
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What Lintable reported
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true

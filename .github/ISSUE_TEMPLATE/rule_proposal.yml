@@ -1,0 +1,35 @@
+name: Rule proposal
+description: Propose a new rule.
+labels: [rule proposal]
+body:
+  - type: textarea
+    id: catches
+    attributes:
+      label: What it catches
+    validations:
+      required: true
+  - type: textarea
+    id: structure
+    attributes:
+      label: Why it needs code structure
+      description: What a line-based regex rule can't see here.
+    validations:
+      required: true
+  - type: textarea
+    id: instead
+    attributes:
+      label: What to do instead
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Code it should report, and code it shouldn't.
+      render: swift
+    validations:
+      required: true
+  - type: textarea
+    id: false-positives
+    attributes:
+      label: Likely false positives
