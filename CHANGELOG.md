@@ -15,4 +15,5 @@ All notable changes are listed here. The format follows
 - `LintableEngine`: `.lintable.yml` configuration, file discovery with `**` globs,
   parallel linting, `// lintable:` directives with required reasons, baselines, a
   per-file cache, and the `xcode`, `summary`, `json`, `sarif` and `github` reporters.
-- `lintable` CLI: `lint`, `baseline`, `rules`, `init`, `version`.
+- `lintable` CLI: `lint`, `baseline`, `rules`, `explain`, `docs`, `init`, `version`.
+- `LintableTesting`: `assertLint` and `verifyExamples(of:)` for rule tests.

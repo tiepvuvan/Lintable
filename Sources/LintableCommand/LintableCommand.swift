@@ -21,6 +21,8 @@ struct RootCommand: AsyncParsableCommand {
             LintCommand.self,
             BaselineCommand.self,
             RulesCommand.self,
+            ExplainCommand.self,
+            DocsCommand.self,
             InitCommand.self,
             VersionCommand.self,
         ],

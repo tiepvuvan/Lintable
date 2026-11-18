@@ -38,3 +38,4 @@ tool version, the rules, the config and each file's content. A ``Reporter`` turn
 - ``Cache``
 - ``Reporter``
 - ``Reporters``
+- ``RuleDocumentation``

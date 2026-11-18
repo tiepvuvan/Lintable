@@ -95,3 +95,22 @@ import Testing
         #expect(Reporters.named("html") == nil)
     }
 }
+
+@Suite struct DocumentationTests {
+    @Test func pageListsOptionsExamplesAndRationale() throws {
+        let page = RuleDocumentation.page(
+            for: ForbiddenNameRule.description,
+            defaults: try registry().defaultOptions(of: "forbidden_name")
+        )
+        #expect(page.hasPrefix("# `forbidden_name`\n"))
+        #expect(page.contains("| `names` | `forbidden` | Identifiers to report. |"))
+        #expect(page.contains("| `report_calls` | `true` | Also report calls. |"))
+        #expect(page.contains("let value = ↓forbidden"))
+        #expect(page.contains("## Rationale"))
+    }
+
+    @Test func indexLinksEveryRule() {
+        let index = RuleDocumentation.index(for: [ForbiddenNameRule.description])
+        #expect(index.contains("[`forbidden_name`](forbidden_name.md)"))
+    }
+}

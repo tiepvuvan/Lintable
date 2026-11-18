@@ -88,6 +88,22 @@ import Testing
         #expect(await run(base) == 1)
     }
 
+    @Test func docsWritesAPagePerRuleAndAnIndex() async throws {
+        let directory = try TemporaryDirectory()
+        let output = directory.url.appendingPathComponent("docs").path
+        #expect(await run(["docs", "--output", output]) == 0)
+        let pages = try FileManager.default.contentsOfDirectory(atPath: output).sorted()
+        #expect(pages.contains("forbidden_name.md"))
+        #expect(pages.contains("superfluous_directive.md"))
+        #expect(pages.contains("README.md"))
+    }
+
+    @Test func explainKnowsLoadedAndEngineRules() async {
+        #expect(await run(["explain", "forbidden_name"]) == 0)
+        #expect(await run(["explain", "missing_reason"]) == 0)
+        #expect(await run(["explain", "nope"]) == 2)
+    }
+
     @Test func initWritesAConfigListingEveryRule() async throws {
         let directory = try TemporaryDirectory()
         let previous = FileManager.default.currentDirectoryPath

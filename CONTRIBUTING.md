@@ -18,7 +18,12 @@ swift test
 swiftlint lint --strict
 ```
 
-CI runs all three on macOS, and build and test on Linux.
+```bash
+swift run lintable docs --output docs/rules
+```
+
+CI runs all four on macOS, and build and test on Linux. Regenerate `docs/rules` when a
+rule's description changes; CI fails when it's out of date.
 
 ## Conventions
 
