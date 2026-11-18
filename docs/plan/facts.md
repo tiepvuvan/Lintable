@@ -32,6 +32,24 @@ machine or in the code; "assumed" means a later phase or CI has to confirm it.
   `layout_lifecycle`, and the passing one builds. `swift package lintable` runs the
   command plugin and prints the summary.
 
+### CI
+
+From the first CI run, on 2026-11-18:
+
+- GitHub's `macos-15` runner has Swift 6.1.2 (Xcode 16.4), not 6.4. Lintable
+  builds and its tests pass there; SwiftPM compiles swift-syntax from source, so
+  the job takes about 7 minutes.
+- The `swift:6.4` image builds and tests Lintable on Linux, in about 2 minutes.
+- Swift 6.1's `swift build` stopped the plugin smoke test: "a prebuild command
+  cannot use executables built from source, including executable target
+  'lintable'". Its check compares the executable's file name with the names of
+  all the tools the plugin can use, binary targets included
+  ([swift-package-manager#8440](https://github.com/swiftlang/swift-package-manager/pull/8440)
+  fixed it later, and SwiftLint's plugin hit the same error). Xcode builds and
+  Swift 6.2 and later check paths instead. The bundle names its artifact
+  `lintable-cli`, which that name check can't confuse with the `lintable`
+  executable.
+
 ### Habitify, the first adopter
 
 Run on 2026-11-18 over 1,008 Swift files with `layout_lifecycle` at its defaults
@@ -53,8 +71,6 @@ Run on 2026-11-18 over 1,008 Swift files with `layout_lifecycle` at its defaults
 
 | Fact | Phase |
 |---|---|
-| GitHub Actions' `macos-15` runner has an Xcode with Swift 6.4, and a `swift:6.4` Docker image exists for Linux | CI |
-| Everything builds and tests on Linux. Docker wasn't running locally, so this is unchecked; the code uses only Foundation APIs available in swift-corelibs-foundation, and `Glibc`/`Musl` for `isatty` | CI |
 | `--static-swift-stdlib` produces Linux binaries that run on Ubuntu 22.04 and 24.04 without a Swift install | Release |
 | GitHub's `ubuntu-24.04-arm` runner builds the aarch64 binary | Release |
 | The universal macOS binary plus two Linux binaries make a zip of a few tens of megabytes | Release |

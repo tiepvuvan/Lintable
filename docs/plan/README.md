@@ -49,7 +49,7 @@ Decisions made while designing, which Peter can still change:
 
 | Phase | Doc | What | Depends on | Release | Status (2026-11-18) |
 |---|---|---|---|---|---|
-| 0 | [phase-0-foundation.md](phase-0-foundation.md) | Package skeleton, license, CI, contributor docs | — | | Built; CI not run yet (not pushed) |
+| 0 | [phase-0-foundation.md](phase-0-foundation.md) | Package skeleton, license, CI, contributor docs | — | | Built; CI on macOS (Swift 6.1.2) and Linux (Swift 6.4) |
 | 1 | [phase-1-kit.md](phase-1-kit.md) | `LintableKit`: the rule API and the syntax index rules share | 0 | | Built, 26 tests |
 | 2 | [phase-2-engine.md](phase-2-engine.md) | `LintableEngine` and the CLI: config, directives, reporters, baseline, cache | 1 | | Built, 52 tests |
 | 3 | [phase-3-testing.md](phase-3-testing.md) | `LintableTesting`: the rule test harness, example checks, generated rule docs | 2 | | Built, 7 tests |

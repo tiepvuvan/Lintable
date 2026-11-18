@@ -6,7 +6,7 @@ struct LintableBuildToolPlugin: BuildToolPlugin {
     func createBuildCommands(context: PluginContext, target: Target) async throws -> [Command] {
         guard let target = target as? SourceModuleTarget else { return [] }
         return try LintCommands.make(
-            tool: context.tool(named: "lintable").url,
+            tool: context.tool(named: "lintable-cli").url,
             target: LintTarget(
                 name: target.name,
                 files: target.sourceFiles(withSuffix: "swift").map(\.url),
@@ -24,7 +24,7 @@ struct LintableBuildToolPlugin: BuildToolPlugin {
     extension LintableBuildToolPlugin: XcodeBuildToolPlugin {
         func createBuildCommands(context: XcodePluginContext, target: XcodeTarget) throws -> [Command] {
             try LintCommands.make(
-                tool: context.tool(named: "lintable").url,
+                tool: context.tool(named: "lintable-cli").url,
                 target: LintTarget(
                     name: target.displayName,
                     files: target.inputFiles.filter { $0.url.pathExtension == "swift" }.map(\.url),

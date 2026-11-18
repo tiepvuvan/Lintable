@@ -42,7 +42,7 @@ fi
   echo '{'
   echo '  "schemaVersion": "1.0",'
   echo '  "artifacts": {'
-  echo '    "lintable": {'
+  echo '    "lintable-cli": {'
   echo '      "type": "executable",'
   echo "      \"version\": \"$VERSION\","
   echo '      "variants": ['

@@ -11,7 +11,7 @@ struct LintableCommandPlugin: CommandPlugin {
             .compactMap { $0 as? SourceModuleTarget }
             .flatMap { $0.sourceFiles(withSuffix: "swift").map(\.url) }
         try LintRun.perform(
-            tool: context.tool(named: "lintable").url,
+            tool: context.tool(named: "lintable-cli").url,
             files: files,
             root: context.package.directoryURL,
             workDirectory: context.pluginWorkDirectoryURL,
@@ -31,7 +31,7 @@ struct LintableCommandPlugin: CommandPlugin {
                 .filter { names.isEmpty || names.contains($0.displayName) }
                 .flatMap { $0.inputFiles.filter { $0.url.pathExtension == "swift" }.map(\.url) }
             try LintRun.perform(
-                tool: context.tool(named: "lintable").url,
+                tool: context.tool(named: "lintable-cli").url,
                 files: files,
                 root: context.xcodeProject.directoryURL,
                 workDirectory: context.pluginWorkDirectoryURL,

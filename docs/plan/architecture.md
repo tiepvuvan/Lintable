@@ -260,7 +260,7 @@ Xcode's menu.
   {
     "schemaVersion": "1.0",
     "artifacts": {
-      "lintable": {
+      "lintable-cli": {
         "type": "executable",
         "version": "0.1.0",
         "variants": [
@@ -272,6 +272,13 @@ Xcode's menu.
     }
   }
   ```
+
+  The artifact is named `lintable-cli`, not `lintable`. Swift 6.1's
+  `swift build` refuses a prebuild command whose executable has the same file
+  name as any tool the plugin can use, prebuilt ones included, calling it
+  "built from source" ([swift-package-manager#8440](https://github.com/swiftlang/swift-package-manager/pull/8440)
+  fixed it in later releases). A tool name that differs from the binary's
+  name keeps the build-tool plugin working there.
 
 - **GitHub release** of `Lintable` with the zip, its checksum, and the binaries
   as plain downloads for CI.
