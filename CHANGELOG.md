@@ -17,3 +17,4 @@ All notable changes are listed here. The format follows
   per-file cache, and the `xcode`, `summary`, `json`, `sarif` and `github` reporters.
 - `lintable` CLI: `lint`, `baseline`, `rules`, `explain`, `docs`, `init`, `version`.
 - `LintableTesting`: `assertLint` and `verifyExamples(of:)` for rule tests.
+- The first rule, `layout_lifecycle`: views get geometry only during layout.

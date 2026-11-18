@@ -17,6 +17,8 @@ jobs:
         run: |
           brew install swiftlint
           swiftlint lint --strict
+      - name: Lintable checks itself
+        run: swift run lintable lint --reporter github
       - name: Rule docs are up to date
         run: |
           swift run lintable docs --output docs/rules
