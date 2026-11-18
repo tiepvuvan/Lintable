@@ -46,8 +46,8 @@ Tests/LintableEngineTests/
 2. **Configuration.** Decode `.lintable.yml` with Yams: `included`, `excluded`,
    `baseline`, `require_reasons`, `rules`. Unknown top-level keys are errors.
 3. **Discovery.** Expand paths and globs relative to the config file; accept an
-   explicit list (`--files-from`). Skip non-Swift files; follow no symlinks out
-   of the root.
+   explicit list (`--files-from`). Apply `excluded` to both. Skip non-Swift
+   files; follow no symlinks out of the root.
 4. **Runner.** A task group with at most one task per active processor. Per
    file: read, cache lookup, `LintFile`, enabled rules, directives, cache store.
    A rule that traps can't be caught; a rule that returns a violation outside the
@@ -76,7 +76,8 @@ the engine is tested without the real rules:
 
 - Config: valid file; unknown key; bad severity; unknown option for a rule; a
   rule listed that isn't loaded.
-- Discovery: `included` and `excluded` globs, `**`, an explicit file list.
+- Discovery: `included` and `excluded` globs, `**`, an explicit file list with
+  some files excluded.
 - Directives: each form; several IDs; a missing reason with and without
   `require_reasons`; an unknown ID; a superfluous directive; a region left open
   to the end of the file.

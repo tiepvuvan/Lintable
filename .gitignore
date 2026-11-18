@@ -1,7 +1,10 @@
 .DS_Store
 /.build/
 /.swiftpm/
+/dist/
 .build/
 .swiftpm/
 *.xcodeproj/xcuserdata/
 DerivedData/
+/LintablePlugins/LintableBinary.artifactbundle/
+/Fixtures/**/.build/

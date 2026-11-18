@@ -23,6 +23,8 @@ jobs:
         run: |
           swift run lintable docs --output docs/rules
           git diff --exit-code docs/rules
+      - name: Plugin smoke test
+        run: script/plugin-smoke-test.sh
 
   linux:
     runs-on: ubuntu-24.04

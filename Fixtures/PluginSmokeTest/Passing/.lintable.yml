@@ -1,0 +1,3 @@
+rules:
+  layout_lifecycle:
+    severity: error

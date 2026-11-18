@@ -19,14 +19,18 @@ checked in parallel. Output is sorted, so runs are deterministic.
 | `LintableKit` | library | SwiftSyntax, SwiftParser | The rule API and the syntax index. Rule authors import only this. |
 | `LintableEngine` | library | LintableKit, Yams | Config, file discovery, the runner, directives, baseline, cache, reporters. |
 | `LintableCommand` | library | LintableEngine, ArgumentParser | The CLI as a library: `LintableCommand.main(rulePacks:)`. Custom linters call it. |
-| `LintableRules` | library | LintableKit | The built-in rule pack. Starts with `layout_lifecycle`. |
+| `LintableRules` | library | LintableKit | The built-in rule pack, `BuiltInRules`. Starts with `layout_lifecycle`. |
 | `LintableTesting` | library | LintableKit, LintableEngine | The rule test harness, for Lintable and for custom rule packs. |
 | `lintable` | executable | LintableCommand, LintableRules | The official linter: built-in rules only. |
 
 Products: the five libraries and the `lintable` executable. The package exports
 no plugin, so depending on it never attaches anything by accident.
 
-**`tiepvuvan/LintablePlugins`**, what most projects add:
+**`tiepvuvan/LintablePlugins`**, what most projects add. Its source lives in this repo's
+`LintablePlugins/` folder, where the binary target points at a locally built bundle
+(`LintableBinary.artifactbundle`, not committed); the release workflow publishes a copy
+whose binary target points at the release asset. It needs swift-tools-version 6.1, for
+the plugin API's `Target.directoryURL`.
 
 - `.binaryTarget(name: "LintableBinary", url: <release asset>, checksum: <sha256>)`.
 - `LintableBuildToolPlugin`: a `BuildToolPlugin` and an `XcodeBuildToolPlugin`.
@@ -34,7 +38,7 @@ no plugin, so depending on it never attaches anything by accident.
   (`swift package lintable`, and a menu item in Xcode).
 
 It has no source dependencies, so adding it downloads one zip. The release
-pipeline (phase 5) updates its URL and checksum and tags it with the same version
+pipeline (phase 5) writes its URL and checksum and tags it with the same version
 as Lintable.
 
 ## The rule API (`LintableKit`)
@@ -62,8 +66,10 @@ public struct RuleDescription: Sendable {
     public var rationale: String
     public var category: RuleCategory
     public var defaultSeverity: Severity
+    public var optionDescriptions: [String: String]
     public var triggeringExamples: [Example]
     public var nonTriggeringExamples: [Example]
+    public var howToFix: String
 }
 
 public struct Violation: Sendable, Hashable {
@@ -82,6 +88,8 @@ public protocol RulePack: Sendable {
   refuses to start when two rules share an ID.
 - A rule returns `Violation`s with positions. The engine adds the rule's ID, the
   configured severity, and the line and column, so rules never format output.
+  Messages don't carry links; the JSON and SARIF reporters add each rule's
+  documentation URL, and `lintable explain` prints the page.
 - `Options` decode from the rule's section of the config. Every field has a
   default, so `init()` is the rule's default configuration, and an unknown key is
   a config error.
@@ -134,8 +142,9 @@ lintable lint [paths…] [--config <file>] [--reporter <name>] [--baseline <file
    Instantiate the enabled rules with their decoded options. A config error stops
    the run with exit code 2.
 2. **Files.** Use the files given (`--files-from` takes a file with one path per
-   line, which the plugin uses), or walk the paths, applying `included` and
-   `excluded` globs. Skip files that aren't `.swift`.
+   line, which the plugin uses), or walk the paths under `included`. `excluded`
+   globs apply either way, so a test target's files are skipped even when the
+   plugin passes them. Skip files that aren't `.swift`.
 3. **Check.** In parallel, per file: read it, look it up in the cache, otherwise
    parse it, build its `LintFile`, run every enabled rule, apply the file's
    directives, and store the result.
@@ -291,7 +300,7 @@ import LintableRules
 @main
 struct AcmeLint {
     static func main() async {
-        await LintableCommand.main(rulePacks: [LintableRules.self, AcmeRules.self])
+        await LintableCommand.main(rulePacks: [BuiltInRules.self, AcmeRules.self])
     }
 }
 ```

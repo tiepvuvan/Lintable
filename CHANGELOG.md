@@ -18,3 +18,5 @@ All notable changes are listed here. The format follows
 - `lintable` CLI: `lint`, `baseline`, `rules`, `explain`, `docs`, `init`, `version`.
 - `LintableTesting`: `assertLint` and `verifyExamples(of:)` for rule tests.
 - The first rule, `layout_lifecycle`: views get geometry only during layout.
+- `LintablePlugins`: a build-tool plugin and a command plugin that run a prebuilt
+  binary.

@@ -25,6 +25,14 @@ swift run lintable docs --output docs/rules
 CI runs all four on macOS, and build and test on Linux. Regenerate `docs/rules` when a
 rule's description changes; CI fails when it's out of date.
 
+The plugin smoke test builds a release binary, packs it into
+`LintablePlugins/LintableBinary.artifactbundle`, and builds two fixture packages
+through the build-tool plugin:
+
+```bash
+script/plugin-smoke-test.sh
+```
+
 ## Conventions
 
 - Swift 6 language mode with strict concurrency.
@@ -53,3 +61,8 @@ Open a **Rule proposal** issue before writing code. A rule belongs here when:
 - Tests: `verifyExamples(of:)` plus `assertLint` cases for every context and option.
 - A "How to fix" section in its description, and its generated page in `docs/rules`.
 - A run on a real codebase, with the false positives explained in the pull request.
+
+## Releases
+
+Maintainers tag `vX.Y.Z`. The release workflow builds the binaries, publishes the
+artifact bundle, and updates `tiepvuvan/LintablePlugins` with its URL and checksum.

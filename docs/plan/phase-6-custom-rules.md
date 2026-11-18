@@ -25,7 +25,7 @@ docs/custom-rules.md
 1. **Template package.** A working custom linter: a rule pack with one example
    rule that uses the index (no `print` inside a `UIView` subclass's methods),
    its tests with `LintableTesting`, and `acme-lint`, which calls
-   `LintableCommand.main(rulePacks: [LintableRules.self, AcmeRules.self])`.
+   `LintableCommand.main(rulePacks: [BuiltInRules.self, AcmeRules.self])`.
 2. **Source plugin.** `AcmeLintSourcePlugin` runs the template's own executable
    as a build command: inputs are the target's Swift files and the config,
    output is a stamp file in the work directory, so it reruns only when they
@@ -33,7 +33,7 @@ docs/custom-rules.md
 3. **Binary plugin.** `AcmeLintBinaryPlugin`, the same shape as
    `LintablePlugins`, for a project that releases its linter as an artifact
    bundle.
-4. **Bundle script.** Make `script/build-artifact-bundle.sh` take the executable
+4. **Bundle scripts.** Make `script/build-binary.sh` and `script/assemble-artifact-bundle.sh` take the executable
    product and package path, so a custom linter uses the same script.
 5. **Guide** (`docs/custom-rules.md`): when a rule belongs in a project and when
    to propose it upstream; writing a rule (visitor, index queries, options,

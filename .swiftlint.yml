@@ -1,9 +1,14 @@
 included:
   - Sources
   - Tests
+  - LintablePlugins/Plugins
+  - LintablePlugins/Package.swift
+  - Fixtures
   - Package.swift
 excluded:
   - .build
+  - Fixtures/PluginSmokeTest/Failing/.build
+  - Fixtures/PluginSmokeTest/Passing/.build
 disabled_rules:
   - optional_data_string_conversion
 opt_in_rules:

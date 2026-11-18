@@ -17,25 +17,27 @@ Each of these publishes something outside the repo; ask before doing it:
 
 ## Files
 
-In `Lintable`:
+As built, all in this repo:
 
 ```
-script/build-artifact-bundle.sh
+script/set-version.sh
+script/build-binary.sh
+script/assemble-artifact-bundle.sh
+script/make-plugins-package.sh
+script/plugin-smoke-test.sh
 .github/workflows/release.yml
-Fixtures/PluginSmokeTest/Package.swift
-Fixtures/PluginSmokeTest/Sources/Smoke/ChartView.swift
-Fixtures/PluginSmokeTest/.lintable.yml
+LintablePlugins/Package.swift
+LintablePlugins/Plugins/LintableBuildToolPlugin/Plugin.swift
+LintablePlugins/Plugins/LintableCommandPlugin/Plugin.swift
+LintablePlugins/README.md
+LintablePlugins/LICENSE
+Fixtures/PluginSmokeTest/Failing/
+Fixtures/PluginSmokeTest/Passing/
 ```
 
-In `LintablePlugins`:
-
-```
-Package.swift
-Plugins/LintableBuildToolPlugin/Plugin.swift
-Plugins/LintableCommandPlugin/Plugin.swift
-README.md
-LICENSE
-```
+`LintablePlugins/` is the source of the separate repo: the release workflow runs
+`make-plugins-package.sh` to copy it with the binary target pointing at the release
+asset, then commits and tags it in `tiepvuvan/LintablePlugins`.
 
 ## Steps
 
@@ -69,7 +71,9 @@ LICENSE
    - `Fixtures/PluginSmokeTest`: a package depending on `LintablePlugins` by
      local path (with a locally built bundle), whose `ChartView.swift` sets a
      frame in a gesture handler. `swift build` must fail with the rule's message
-     at that line, and pass once the line is removed;
+     at that line, and pass once the line is removed. The fixture builds on
+     Linux too, so it declares a tiny `View` class with a `frame` property
+     instead of importing UIKit; the rule only looks at syntax;
    - the same against an Xcode project with `xcodebuild`, on macOS.
 6. **Docs.** The README's status becomes "0.1.0", with install steps for the
    plugin, Mint and the plain binary, and the list of rules. `CHANGELOG.md` gets

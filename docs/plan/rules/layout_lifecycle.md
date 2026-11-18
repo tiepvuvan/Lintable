@@ -77,9 +77,9 @@ information. That keeps it fast and its answers predictable.
 | A write outside layout | `` `frame` is set in `handlePan(_:)`, outside the layout pass. Store the state, call `setNeedsLayout()`, and set it in `layoutSubviews()` or a private `layout…` helper. `` |
 | A helper called from outside layout (reported at the call) | `` `layoutHighlight()` sets geometry and is called from `handlePan(_:)`, outside the layout pass. Call `setNeedsLayout()` instead, and `layoutIfNeeded()` to apply it now. `` |
 | A helper that isn't private | `` `layoutHighlight()` must be `private` or `fileprivate` to count as a layout helper. `` |
-| A helper used as a value, in `#selector`, or marked `@objc` | `` `layoutHighlight()` can be called from anywhere when used as a value or `@objc`. Keep layout helpers private calls from layout methods. `` |
+| A helper used as a value, in `#selector`, or marked `@objc` | `` `layoutHighlight()` can be called from anywhere when it's used as a value or marked `@objc`. Call it only from layout methods. `` |
 
-Every message ends with a link to the rule's documentation page.
+The JSON and SARIF reporters attach the rule's documentation page to each violation; the messages themselves stay short.
 
 ## Options
 
@@ -89,6 +89,7 @@ Every message ends with a link to the rule's documentation page.
 | `check_transform` | `false` | Also treat `transform` as a layout write |
 | `layout_methods` | the list above | Methods where writes are allowed |
 | `exempt_transitions` | `true` | Allow writes in transition methods |
+| `transition_methods` | the list above | The methods `exempt_transitions` allows |
 | `exempt_superclasses` | the list above | Classes whose subclasses are exempt |
 | `helper_prefix` | `layout` | Name prefix for private layout helpers |
 | `deferred_calls` | the list above | Calls whose closures run outside layout |
@@ -151,8 +152,8 @@ final class ChartView: UIView {
 ```swift
 final class CardTransition: NSObject, UIViewControllerAnimatedTransitioning {
     func animateTransition(using context: UIViewControllerContextTransitioning) {
-        let view = context.view(forKey: .to)
-        view?.frame = context.finalFrame(for: context.viewController(forKey: .to)!)
+        guard let controller = context.viewController(forKey: .to) else { return }
+        controller.view.frame = context.finalFrame(for: controller)
     }
 }
 ```

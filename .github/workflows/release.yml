@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: script/set-version.sh "${GITHUB_REF_NAME#v}"
+      - run: script/build-binary.sh dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lintable-macos
+          path: dist/macos
+
+  linux:
+    strategy:
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    container: swift:6.4
+    steps:
+      - uses: actions/checkout@v4
+      - run: script/set-version.sh "${GITHUB_REF_NAME#v}"
+      - run: script/build-binary.sh dist
+      - run: echo "PLATFORM=linux-$(uname -m)" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lintable-${{ env.PLATFORM }}
+          path: dist/${{ env.PLATFORM }}
+
+  publish:
+    needs: [macos, linux]
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Assemble the artifact bundle
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          for platform in macos linux-x86_64 linux-aarch64; do
+            mkdir -p "dist/$platform"
+            cp "artifacts/lintable-$platform/lintable" "dist/$platform/lintable"
+            chmod +x "dist/$platform/lintable"
+            cp "dist/$platform/lintable" "dist/lintable-$platform"
+          done
+          script/assemble-artifact-bundle.sh "$VERSION" dist release
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release/lintable.artifactbundle.zip \
+            release/lintable.artifactbundle.zip.sha256 \
+            dist/lintable-macos dist/lintable-linux-x86_64 dist/lintable-linux-aarch64 \
+            --title "$GITHUB_REF_NAME" --generate-notes
+      - name: Publish LintablePlugins
+        env:
+          PLUGINS_REPO_TOKEN: ${{ secrets.PLUGINS_REPO_TOKEN }}
+        if: env.PLUGINS_REPO_TOKEN != ''
+        run: |
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/lintable.artifactbundle.zip"
+          CHECKSUM="$(cat release/lintable.artifactbundle.zip.sha256)"
+          git clone "https://x-access-token:${PLUGINS_REPO_TOKEN}@github.com/tiepvuvan/LintablePlugins.git" plugins
+          script/make-plugins-package.sh "$URL" "$CHECKSUM" plugins
+          cd plugins
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Lintable ${GITHUB_REF_NAME#v}"
+          git tag "${GITHUB_REF_NAME#v}"
+          git push origin HEAD --tags
