@@ -25,12 +25,16 @@ public extension LayoutLifecycleRule {
             "properties": "Properties whose assignment is a layout write, with their `origin`, `size`, `x`, `y`, `width` and `height` parts.",
             "check_transform": "Also treat `transform` as a layout write. Off by default: a rotation or a press-down scale doesn't depend on the view's size.",
             "layout_methods": "Methods, by name and labels, where layout writes are allowed.",
-            "exempt_transitions": "Allow layout writes in UIKit transition methods, which hand you start and end frames to animate.",
+            "exempt_transitions": """
+            Allow layout writes in UIKit transition methods, which hand you start and end frames to animate. A `private` \
+            or `fileprivate` function that only transition methods in its file call, directly or through other such \
+            functions, is part of the transition.
+            """,
             "transition_methods": "The transition methods that `exempt_transitions` allows.",
             "exempt_superclasses": "Classes whose subclasses compute layout attributes rather than move views, so anything inside them is allowed.",
             "helper_prefix": """
             A `private` or `fileprivate` function named with this prefix and an uppercase letter is a layout helper, \
-            allowed when it's only called from layout methods in its file.
+            allowed when every call to it in its file comes from a layout method, a transition or another allowed helper.
             """,
             "deferred_calls": """
             Calls whose closures run later, outside the layout pass, even when passed from a layout method. \
@@ -113,6 +117,22 @@ public extension LayoutLifecycleRule {
             }
             """),
             Example("""
+            final class CardPresentationController: UIPresentationController {
+                override func presentationTransitionWillBegin() {
+                    moveCard(to: frameOfPresentedViewInContainerView)
+                }
+
+                @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+                    let offset = recognizer.translation(in: containerView).y
+                    moveCard(to: frameOfPresentedViewInContainerView.offsetBy(dx: 0, dy: offset))
+                }
+
+                private func moveCard(to frame: CGRect) {
+                    1️⃣presentedView?.frame = frame
+                }
+            }
+            """),
+            Example("""
             final class SpinnerView: UIView {
                 func spin() {
                     1️⃣icon.transform = CGAffineTransform(rotationAngle: .pi)
@@ -152,6 +172,23 @@ public extension LayoutLifecycleRule {
                     UIView.animate(withDuration: 0.3) {
                         controller.view.frame = context.finalFrame(for: controller)
                     }
+                }
+            }
+            """),
+            Example("""
+            final class SlideTransition: NSObject, UIViewControllerAnimatedTransitioning {
+                func animateTransition(using context: UIViewControllerContextTransitioning) {
+                    guard let controller = context.viewController(forKey: .to) else { return }
+                    slide(controller.view, to: context.finalFrame(for: controller), in: context)
+                }
+
+                private func slide(_ view: UIView, to finalFrame: CGRect, in context: UIViewControllerContextTransitioning) {
+                    view.frame = finalFrame.offsetBy(dx: finalFrame.width, dy: 0)
+                    UIView.animate(withDuration: 0.3, animations: {
+                        view.frame = finalFrame
+                    }, completion: { _ in
+                        context.completeTransition(!context.transitionWasCancelled)
+                    })
                 }
             }
             """),
@@ -255,6 +292,9 @@ public extension LayoutLifecycleRule {
             presentedView?.frame = frameOfPresentedViewInContainerView
         }
         ```
+
+        **Transitions.** Transition methods, and the private functions only they call, may set frames directly. When \
+        a gesture shares one of those functions, give the gesture its own state and set the frame in layout.
 
         **Adding a subview or a child view controller.** Add it, call `setNeedsLayout()` on the container, and size \
         it in the container's layout.

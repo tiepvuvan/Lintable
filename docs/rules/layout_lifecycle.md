@@ -17,8 +17,8 @@ The rule looks at one file at a time, matches functions by name and labels, and 
 | `check_transform` | `false` | Also treat `transform` as a layout write. Off by default: a rotation or a press-down scale doesn't depend on the view's size. |
 | `deferred_calls` | `DispatchQueue.async`, `DispatchQueue.asyncAfter`, `Task`, `Task.detached`, `Timer.scheduledTimer`, `RunLoop.perform`, `OperationQueue.addOperation`, `NotificationCenter.addObserver`, `sink` | Calls whose closures run later, outside the layout pass, even when passed from a layout method. `A.b` matches `A.b` and `A.x.b`; `b` matches any call ending in `b`. |
 | `exempt_superclasses` | `UICollectionViewLayout`, `UICollectionViewFlowLayout`, `UICollectionViewCompositionalLayout`, `NSCollectionViewLayout`, `NSCollectionViewFlowLayout` | Classes whose subclasses compute layout attributes rather than move views, so anything inside them is allowed. |
-| `exempt_transitions` | `true` | Allow layout writes in UIKit transition methods, which hand you start and end frames to animate. |
-| `helper_prefix` | `layout` | A `private` or `fileprivate` function named with this prefix and an uppercase letter is a layout helper, allowed when it's only called from layout methods in its file. |
+| `exempt_transitions` | `true` | Allow layout writes in UIKit transition methods, which hand you start and end frames to animate. A `private` or `fileprivate` function that only transition methods in its file call, directly or through other such functions, is part of the transition. |
+| `helper_prefix` | `layout` | A `private` or `fileprivate` function named with this prefix and an uppercase letter is a layout helper, allowed when every call to it in its file comes from a layout method, a transition or another allowed helper. |
 | `layout_methods` | `layoutSubviews()`, `viewWillLayoutSubviews()`, `viewDidLayoutSubviews()`, `layoutSublayers(of:)`, `containerViewWillLayoutSubviews()`, `containerViewDidLayoutSubviews()`, `apply(_:)`, `layout()`, `viewWillLayout()`, `viewDidLayout()`, `resizeSubviews(withOldSize:)`, `layoutSublayers()` | Methods, by name and labels, where layout writes are allowed. |
 | `properties` | `frame`, `bounds`, `center`, `position`, `anchorPoint` | Properties whose assignment is a layout write, with their `origin`, `size`, `x`, `y`, `width` and `height` parts. |
 | `transition_methods` | `animateTransition(using:)`, `animationEnded(_:)`, `startInteractiveTransition(_:)`, `interruptibleAnimator(using:)`, `presentationTransitionWillBegin()`, `presentationTransitionDidEnd(_:)`, `dismissalTransitionWillBegin()`, `dismissalTransitionDidEnd(_:)` | The transition methods that `exempt_transitions` allows. |
@@ -69,6 +69,8 @@ override func containerViewWillLayoutSubviews() {
     presentedView?.frame = frameOfPresentedViewInContainerView
 }
 ```
+
+**Transitions.** Transition methods, and the private functions only they call, may set frames directly. When a gesture shares one of those functions, give the gesture its own state and set the frame in layout.
 
 **Adding a subview or a child view controller.** Add it, call `setNeedsLayout()` on the container, and size it in the container's layout.
 
@@ -163,6 +165,23 @@ final class OverlayView: UIView {
 }
 ```
 
+```swift
+final class CardPresentationController: UIPresentationController {
+    override func presentationTransitionWillBegin() {
+        moveCard(to: frameOfPresentedViewInContainerView)
+    }
+
+    @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+        let offset = recognizer.translation(in: containerView).y
+        moveCard(to: frameOfPresentedViewInContainerView.offsetBy(dx: 0, dy: offset))
+    }
+
+    private func moveCard(to frame: CGRect) {
+        ↓presentedView?.frame = frame
+    }
+}
+```
+
 With these options:
 
 ```yaml
@@ -211,6 +230,24 @@ final class CardTransition: NSObject, UIViewControllerAnimatedTransitioning {
         UIView.animate(withDuration: 0.3) {
             controller.view.frame = context.finalFrame(for: controller)
         }
+    }
+}
+```
+
+```swift
+final class SlideTransition: NSObject, UIViewControllerAnimatedTransitioning {
+    func animateTransition(using context: UIViewControllerContextTransitioning) {
+        guard let controller = context.viewController(forKey: .to) else { return }
+        slide(controller.view, to: context.finalFrame(for: controller), in: context)
+    }
+
+    private func slide(_ view: UIView, to finalFrame: CGRect, in context: UIViewControllerContextTransitioning) {
+        view.frame = finalFrame.offsetBy(dx: finalFrame.width, dy: 0)
+        UIView.animate(withDuration: 0.3, animations: {
+            view.frame = finalFrame
+        }, completion: { _ in
+            context.completeTransition(!context.transitionWasCancelled)
+        })
     }
 }
 ```

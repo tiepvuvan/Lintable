@@ -53,7 +53,7 @@ Decisions made while designing, which Peter can still change:
 | 1 | [phase-1-kit.md](phase-1-kit.md) | `LintableKit`: the rule API and the syntax index rules share | 0 | | Built, 26 tests |
 | 2 | [phase-2-engine.md](phase-2-engine.md) | `LintableEngine` and the CLI: config, directives, reporters, baseline, cache | 1 | | Built, 52 tests |
 | 3 | [phase-3-testing.md](phase-3-testing.md) | `LintableTesting`: the rule test harness, example checks, generated rule docs | 2 | | Built, 7 tests |
-| 4 | [phase-4-layout-rule.md](phase-4-layout-rule.md) | `layout_lifecycle`, validated on Habitify | 3 | | Built, 24 tests, validated |
+| 4 | [phase-4-layout-rule.md](phase-4-layout-rule.md) | `layout_lifecycle`, validated on Habitify | 3 | | Built, 28 tests, validated |
 | 5 | [phase-5-release.md](phase-5-release.md) | Build-tool and command plugins, the release pipeline, `LintablePlugins` | 4 | 0.1.0 | Built and smoke-tested on macOS; release steps need Peter |
 | 6 | [phase-6-custom-rules.md](phase-6-custom-rules.md) | Custom rule packages: template, source-built plugin, guide | 5 | 0.2.0 | Not started |
 

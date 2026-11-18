@@ -37,18 +37,16 @@ machine or in the code; "assumed" means a later phase or CI has to confirm it.
 Run on 2026-11-18 over 1,008 Swift files with `layout_lifecycle` at its defaults
 (details are in Habitify's private adoption plan; only counts here):
 
-- 36 violations in 20 files.
+- 31 violations in 19 files.
 - Every site the hand-checked inventory expected is reported: 29 writes in 23
   functions plus 3 layer `position` writes. Two of them are reported more
   precisely, at the 2 calls of a private `layout…` helper from animation blocks
   outside layout.
-- Nothing is reported on the 11 collection view layout attribute writes, the 12
-  writes in UIKit transition callbacks, or the local variable named `frame`.
-- 5 writes in private transition helpers (called only from transition callbacks, but
-  not named `layout…`) are reported. The inventory had assumed any helper of a
-  transition callback was exempt; the agreed rule only exempts `layout…` helpers.
-  Open question for Peter: keep that, or treat private helpers called only from
-  transition methods as part of the transition.
+- Nothing is reported on the 11 collection view layout attribute writes, the 17
+  writes in UIKit transition code (12 in transition callbacks, 5 in private
+  functions that only those callbacks call), or the local variable named `frame`.
+  The first run reported those 5, when only `layout…` helpers were exempt; Peter
+  chose to treat a transition's private functions as part of the transition.
 - Timing on an Apple silicon Mac, release build: 1.4 s cold, 0.7 s with the cache.
 
 ## Assumed

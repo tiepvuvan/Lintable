@@ -3,9 +3,33 @@ import SwiftSyntax
 
 struct LayoutLifecycleAnalysis {
     private enum Context {
-        case allowed
+        case layout
+        case transition
         case helper(FunctionSignature)
         case outside(String)
+
+        var isAllowed: Bool {
+            switch self {
+            case .layout, .transition:
+                true
+            case .helper, .outside:
+                false
+            }
+        }
+
+        var isTransition: Bool {
+            switch self {
+            case .transition:
+                true
+            case .layout, .helper, .outside:
+                false
+            }
+        }
+    }
+
+    private struct AllowedHelpers {
+        var layout: Set<FunctionSignature> = []
+        var transition: Set<FunctionSignature> = []
     }
 
     private static let geometryParts: Set<String> = ["origin", "size", "x", "y", "width", "height"]
@@ -29,16 +53,20 @@ struct LayoutLifecycleAnalysis {
     func violations() -> [Violation] {
         let writes = WriteCollector(index: file.index)
         writes.walk(file.tree)
-        let helpers = file.index.functions.filter(isHelper)
-        let privateHelpers = helpers.filter { $0.accessLevel <= .fileprivate }
-        let allowedHelpers = resolveAllowedHelpers(privateHelpers)
+        let privateFunctions = file.index.functions.filter { $0.accessLevel <= .fileprivate }
+        let privateHelpers = privateFunctions.filter(isHelper)
+        var allowed = AllowedHelpers()
+        if declaresTransitionMethod {
+            allowed = resolve(privateFunctions.filter(isTransitionHelperCandidate), into: \.transition, from: allowed, accepting: \.isTransition)
+        }
+        allowed = resolve(privateHelpers, into: \.layout, from: allowed, accepting: \.isAllowed)
 
         var violations: [Violation] = []
         var publicHelpersWithWrites: [FunctionSignature] = []
         for write in writes.found {
             guard let path = writtenPath(write.target, at: write.node) else { continue }
-            switch context(of: write.node, allowedHelpers: allowedHelpers) {
-            case .allowed:
+            switch context(of: write.node, allowed: allowed) {
+            case .layout, .transition:
                 continue
             case let .helper(signature):
                 if signature.accessLevel > .fileprivate, !publicHelpersWithWrites.contains(signature) {
@@ -51,13 +79,13 @@ struct LayoutLifecycleAnalysis {
         for helper in publicHelpersWithWrites {
             violations.append(Violation(at: nameToken(of: helper), message: Message.notPrivate(helper.displayName)))
         }
-        for helper in privateHelpers where !allowedHelpers.contains(helper) {
-            violations += helperViolations(helper, allowedHelpers: allowedHelpers)
+        for helper in privateHelpers where !allowed.layout.contains(helper) {
+            violations += helperViolations(helper, allowed: allowed)
         }
         return violations
     }
 
-    private func helperViolations(_ helper: FunctionSignature, allowedHelpers: Set<FunctionSignature>) -> [Violation] {
+    private func helperViolations(_ helper: FunctionSignature, allowed: AllowedHelpers) -> [Violation] {
         let valueMessage = Message.usedAsValue(helper.displayName)
         var violations: [Violation] = []
         if helper.isObjC {
@@ -67,33 +95,36 @@ struct LayoutLifecycleAnalysis {
             violations.append(Violation(at: reference.node, message: valueMessage))
         }
         for call in file.index.calls(to: helper) {
-            guard case let .outside(name) = context(of: call.node, allowedHelpers: allowedHelpers) else { continue }
+            guard case let .outside(name) = context(of: call.node, allowed: allowed) else { continue }
             violations.append(Violation(at: call.node, message: Message.helperCall(helper.displayName, from: name)))
         }
         return violations
     }
 
-    private func resolveAllowedHelpers(_ helpers: [FunctionSignature]) -> Set<FunctionSignature> {
-        var allowed: Set<FunctionSignature> = []
+    private var declaresTransitionMethod: Bool {
+        file.index.functions.contains { transitionMethods.contains($0.displayName) }
+    }
+
+    private func isTransitionHelperCandidate(_ signature: FunctionSignature) -> Bool {
+        !signature.isOverride
+            && !layoutMethods.contains(signature.displayName)
+            && !transitionMethods.contains(signature.displayName)
+            && !isHelper(signature)
+    }
+
+    private func resolve(
+        _ candidates: [FunctionSignature],
+        into helpers: WritableKeyPath<AllowedHelpers, Set<FunctionSignature>>,
+        from start: AllowedHelpers,
+        accepting accepts: (Context) -> Bool
+    ) -> AllowedHelpers {
+        var allowed = start
         var changed = true
         while changed {
             changed = false
-            for helper in helpers where !allowed.contains(helper) {
-                guard !helper.isObjC, file.index.references(to: helper).isEmpty else { continue }
-                let calls = file.index.calls(to: helper)
-                guard !calls.isEmpty else { continue }
-                let everyCallIsInLayout = calls.allSatisfy { call in
-                    switch context(of: call.node, allowedHelpers: allowed) {
-                    case .allowed:
-                        true
-                    case let .helper(caller):
-                        allowed.contains(caller)
-                    case .outside:
-                        false
-                    }
-                }
-                if everyCallIsInLayout {
-                    allowed.insert(helper)
+            for candidate in candidates where !allowed[keyPath: helpers].contains(candidate) {
+                if isCalledOnly(candidate, from: accepts, allowed: allowed) {
+                    allowed[keyPath: helpers].insert(candidate)
                     changed = true
                 }
             }
@@ -101,9 +132,15 @@ struct LayoutLifecycleAnalysis {
         return allowed
     }
 
-    private func context(of node: Syntax, allowedHelpers: Set<FunctionSignature>) -> Context {
+    private func isCalledOnly(_ function: FunctionSignature, from accepts: (Context) -> Bool, allowed: AllowedHelpers) -> Bool {
+        guard !function.isObjC, file.index.references(to: function).isEmpty else { return false }
+        let calls = file.index.calls(to: function)
+        return !calls.isEmpty && calls.allSatisfy { accepts(context(of: $0.node, allowed: allowed)) }
+    }
+
+    private func context(of node: Syntax, allowed: AllowedHelpers) -> Context {
         if file.index.types(of: node).contains(where: { file.index.inheritsFrom($0, anyOf: exemptSuperclasses) }) {
-            return .allowed
+            return .layout
         }
         for scope in file.index.scopes(of: node) {
             switch scope.kind {
@@ -118,18 +155,25 @@ struct LayoutLifecycleAnalysis {
                 if scope.isLocalFunction {
                     continue
                 }
-                if layoutMethods.contains(signature.displayName) || transitionMethods.contains(signature.displayName) {
-                    return .allowed
-                }
-                if isHelper(signature) {
-                    return allowedHelpers.contains(signature) ? .allowed : .helper(signature)
-                }
-                return .outside(scope.name)
+                return context(in: signature, named: scope.name, allowed: allowed)
             default:
                 return .outside(scope.name)
             }
         }
         return .outside("top-level code")
+    }
+
+    private func context(in function: FunctionSignature, named name: String, allowed: AllowedHelpers) -> Context {
+        if layoutMethods.contains(function.displayName) {
+            return .layout
+        }
+        if transitionMethods.contains(function.displayName) || allowed.transition.contains(function) {
+            return .transition
+        }
+        if isHelper(function) {
+            return allowed.layout.contains(function) ? .layout : .helper(function)
+        }
+        return .outside(name)
     }
 
     private func isHelper(_ signature: FunctionSignature) -> Bool {

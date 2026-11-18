@@ -50,6 +50,10 @@ An implicit `self` counts (`frame = …` inside a view). These are not writes:
    `startInteractiveTransition(_:)`, `interruptibleAnimator(using:)`,
    `presentationTransitionWillBegin()`, `presentationTransitionDidEnd(_:)`,
    `dismissalTransitionWillBegin()`, `dismissalTransitionDidEnd(_:)`.
+   A transition's helpers are part of it: a `private` or `fileprivate` function
+   of any name, not `@objc` and never used as a value, whose every call in the
+   file comes from a transition method or another such function. A function a
+   gesture handler also calls isn't one.
 3. **Layout objects:** anything inside a class whose inheritance clause names one
    of `exempt_superclasses` (default `UICollectionViewLayout`,
    `UICollectionViewFlowLayout`, `UICollectionViewCompositionalLayout`,
@@ -88,7 +92,7 @@ The JSON and SARIF reporters attach the rule's documentation page to each violat
 | `properties` | `[frame, bounds, center, position, anchorPoint]` | Properties whose assignment is a layout write |
 | `check_transform` | `false` | Also treat `transform` as a layout write |
 | `layout_methods` | the list above | Methods where writes are allowed |
-| `exempt_transitions` | `true` | Allow writes in transition methods |
+| `exempt_transitions` | `true` | Allow writes in transition methods and the private functions only they call |
 | `transition_methods` | the list above | The methods `exempt_transitions` allows |
 | `exempt_superclasses` | the list above | Classes whose subclasses are exempt |
 | `helper_prefix` | `layout` | Name prefix for private layout helpers |

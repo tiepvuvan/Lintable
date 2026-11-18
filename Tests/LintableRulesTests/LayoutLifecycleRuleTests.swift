@@ -303,6 +303,127 @@ import Testing
     }
 }
 
+@Suite struct LayoutLifecycleTransitionHelperTests {
+    @Test func privateFunctionsCalledOnlyFromTransitionsArePartOfThem() {
+        assertLint(LayoutLifecycleRule.self, """
+        final class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
+            func animateTransition(using context: UIViewControllerContextTransitioning) {
+                guard let sheet = context.view(forKey: .to) else { return }
+                slideIn(sheet, in: context)
+            }
+
+            fileprivate func settle(_ sheet: UIView) {
+                sheet.center.y = sheet.superview?.bounds.midY ?? 0
+            }
+
+            private func slideIn(_ sheet: UIView, in context: UIViewControllerContextTransitioning) {
+                sheet.frame = context.containerView.bounds.offsetBy(dx: 0, dy: context.containerView.bounds.height)
+                UIView.animate(withDuration: 0.3, animations: {
+                    sheet.frame = context.containerView.bounds
+                    layoutShadow(below: sheet)
+                }, completion: { _ in
+                    settle(sheet)
+                    context.completeTransition(!context.transitionWasCancelled)
+                })
+            }
+
+            private func layoutShadow(below sheet: UIView) {
+                shadow.frame = sheet.frame.insetBy(dx: -8, dy: -8)
+            }
+        }
+
+        final class SheetPresentationController: UIPresentationController {
+            override func presentationTransitionWillBegin() {
+                guard let snapshot = installSnapshot(frame: containerView?.bounds ?? .zero) else { return }
+                snapshot.alpha = 0.8
+            }
+
+            override func dismissalTransitionWillBegin() {
+                guard let snapshot = installSnapshot(frame: frameOfPresentedViewInContainerView) else { return }
+                snapshot.alpha = 1
+            }
+
+            private func installSnapshot(frame: CGRect) -> UIView? {
+                let snapshot = presentingViewController.view.snapshotView(afterScreenUpdates: false)
+                snapshot?.frame = frame
+                return snapshot
+            }
+        }
+        """)
+    }
+
+    @Test func aFunctionAlsoCalledOutsideATransitionIsReported() {
+        assertLint(LayoutLifecycleRule.self, """
+        final class CardPresentationController: UIPresentationController {
+            override func presentationTransitionWillBegin() {
+                moveCard(to: frameOfPresentedViewInContainerView)
+            }
+
+            override func dismissalTransitionDidEnd(_ completed: Bool) {
+                DispatchQueue.main.async {
+                    self.restore()
+                }
+            }
+
+            @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+                moveCard(to: frameOfPresentedViewInContainerView.offsetBy(dx: 0, dy: recognizer.translation(in: containerView).y))
+            }
+
+            private func moveCard(to frame: CGRect) {
+                1️⃣presentedView?.frame = frame
+            }
+
+            private func restore() {
+                2️⃣presentingViewController.view.frame = containerView?.bounds ?? .zero
+            }
+        }
+        """, messages: [
+            "1️⃣": "`frame` is set in `moveCard(to:)`, outside the layout pass. Store the state, call `setNeedsLayout()`, and set it in `layoutSubviews()` or a private `layout…` helper.",
+            "2️⃣": "`frame` is set in `restore()`, outside the layout pass. Store the state, call `setNeedsLayout()`, and set it in `layoutSubviews()` or a private `layout…` helper.",
+        ])
+    }
+
+    @Test func onlyPrivateFunctionsThatAreOnlyCalled() {
+        assertLint(LayoutLifecycleRule.self, """
+        final class FadeTransition: NSObject, UIViewControllerAnimatedTransitioning {
+            func animateTransition(using context: UIViewControllerContextTransitioning) {
+                guard let view = context.view(forKey: .to) else { return }
+                reset()
+                place(view, in: context)
+                UIView.animate(withDuration: 0.2, animations: { view.alpha = 1 }, completion: finish)
+            }
+
+            func place(_ view: UIView, in context: UIViewControllerContextTransitioning) {
+                1️⃣view.frame = context.containerView.bounds
+            }
+
+            private func finish(_ finished: Bool) {
+                2️⃣snapshot.frame = initialFrame
+            }
+
+            @objc private func reset() {
+                3️⃣snapshot.frame = initialFrame
+            }
+        }
+        """)
+    }
+
+    @Test func helpersAreReportedWhenTransitionsAreNotExempt() {
+        assertLint(LayoutLifecycleRule.self, options: "exempt_transitions: false", """
+        final class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
+            func animateTransition(using context: UIViewControllerContextTransitioning) {
+                guard let sheet = context.view(forKey: .to) else { return }
+                slideIn(sheet, to: context.containerView.bounds)
+            }
+
+            private func slideIn(_ sheet: UIView, to frame: CGRect) {
+                1️⃣sheet.frame = frame
+            }
+        }
+        """)
+    }
+}
+
 @Suite struct LayoutLifecycleWriteTests {
     @Test func whatCountsAsAWrite() {
         assertLint(LayoutLifecycleRule.self, """
