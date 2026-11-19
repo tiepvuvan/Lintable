@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## Unreleased
 
+## 0.1.0 - 2026-11-19
+
 ### Added
 
 - `LintableKit`: the rule API (`Rule`, `RuleOptions`, `RuleDescription`, `Example`,

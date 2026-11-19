@@ -12,10 +12,10 @@ test and share.
 
 Lintable runs next to SwiftLint, not instead of it.
 
-> **Status: 0.1.0 in development, not released yet.** The design and build plan
-> are in [docs/plan](docs/plan/README.md). The first rule is
+> **Status: 0.1.0, the first release.** The first rule is
 > [`layout_lifecycle`](docs/rules/layout_lifecycle.md), and
-> [Habitify](https://www.habitify.me) is the first project adopting it.
+> [Habitify](https://www.habitify.me) is the first project adopting it. The
+> design and build plan are in [docs/plan](docs/plan/README.md).
 
 ## Rules
 
@@ -26,6 +26,9 @@ Lintable runs next to SwiftLint, not instead of it.
 Rules are opt-in: a project lists the ones it wants in `.lintable.yml`.
 
 ## Use it
+
+Lintable needs Swift 6.1 or later (Xcode 16.3 or later), and runs on macOS 13 or
+later and on Linux (x86_64 and aarch64).
 
 Add the plugin to a Swift package:
 

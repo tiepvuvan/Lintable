@@ -38,6 +38,8 @@ jobs:
   publish:
     needs: [macos, linux]
     runs-on: macos-15
+    env:
+      PLUGINS_REPO_TOKEN: ${{ secrets.PLUGINS_REPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -58,14 +60,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v version="$VERSION" 'index($0, "## " version " ") == 1 { found = 1; next } found && /^## / { exit } found { print }' CHANGELOG.md > release-notes.md
+          if [ -s release-notes.md ]; then
+            NOTES=(--notes-file release-notes.md)
+          else
+            NOTES=(--generate-notes)
+          fi
           gh release create "$GITHUB_REF_NAME" \
             release/lintable.artifactbundle.zip \
             release/lintable.artifactbundle.zip.sha256 \
             dist/lintable-macos dist/lintable-linux-x86_64 dist/lintable-linux-aarch64 \
-            --title "$GITHUB_REF_NAME" --generate-notes
+            --title "Lintable $VERSION" "${NOTES[@]}"
       - name: Publish LintablePlugins
-        env:
-          PLUGINS_REPO_TOKEN: ${{ secrets.PLUGINS_REPO_TOKEN }}
         if: env.PLUGINS_REPO_TOKEN != ''
         run: |
           URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/lintable.artifactbundle.zip"
