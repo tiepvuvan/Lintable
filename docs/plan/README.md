@@ -55,12 +55,13 @@ Decisions made while designing, which Peter can still change:
 | 3 | [phase-3-testing.md](phase-3-testing.md) | `LintableTesting`: the rule test harness, example checks, generated rule docs | 2 | | Built, 7 tests |
 | 4 | [phase-4-layout-rule.md](phase-4-layout-rule.md) | `layout_lifecycle`, validated on Habitify | 3 | | Built, 28 tests, validated |
 | 5 | [phase-5-release.md](phase-5-release.md) | Build-tool and command plugins, the release pipeline, `LintablePlugins` | 4 | 0.1.0 | Released as 0.1.0 on 2026-11-19 |
-| 6 | [phase-6-custom-rules.md](phase-6-custom-rules.md) | Custom rule packages: template, source-built plugin, guide | 5 | 0.2.0 | Not started |
+| — | [CHANGELOG.md](../../CHANGELOG.md) | Localization rules for String Catalogs and the release gate, built for Habitify | 5 | 0.2.0 | Released as 0.2.0 on 2026-11-20 |
+| 6 | [phase-6-custom-rules.md](phase-6-custom-rules.md) | Custom rule packages: template, source-built plugin, guide | 5 | 0.3.0 | Not started |
 
 The phases run in order: each builds on the one before. Lintable is built
 first; Habitify adopts it after 0.1.0.
 
-After 0.2.0: [roadmap.md](roadmap.md).
+After 0.3.0: [roadmap.md](roadmap.md).
 
 ## For every phase
 

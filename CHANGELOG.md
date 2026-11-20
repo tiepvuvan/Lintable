@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## Unreleased
 
+## 0.2.0 - 2026-11-20
+
 ### Added
 
 - Localization rules for String Catalogs: `missing_translation`, `placeholder_mismatch`,

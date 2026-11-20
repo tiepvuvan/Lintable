@@ -15,10 +15,10 @@ placeholders, which Xcode shows but never enforces.
 
 Lintable runs next to SwiftLint, not instead of it.
 
-> **Status: 0.1.0, the first release.** The first rule is
-> [`layout_lifecycle`](docs/rules/layout_lifecycle.md), and
-> [Habitify](https://www.habitify.me) is the first project adopting it. The
-> design and build plan are in [docs/plan](docs/plan/README.md).
+> **Status: 0.2.0.** The rules are
+> [`layout_lifecycle`](docs/rules/layout_lifecycle.md) and six localization rules
+> for String Catalogs, and [Habitify](https://www.habitify.me) is the first project
+> adopting them. The design and build plan are in [docs/plan](docs/plan/README.md).
 
 ## Rules
 
@@ -43,7 +43,7 @@ Add the plugin to a Swift package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tiepvuvan/LintablePlugins", from: "0.1.0"),
+    .package(url: "https://github.com/tiepvuvan/LintablePlugins", from: "0.2.0"),
 ],
 targets: [
     .target(
@@ -154,7 +154,7 @@ import LintableRules
 await LintableCommand.main(rulePacks: [BuiltInRules.self, AcmeRules.self])
 ```
 
-A template package and guide arrive in 0.2.0.
+A template package and guide arrive in 0.3.0.
 
 ## Contributing
 

@@ -1,4 +1,4 @@
-# Phase 6: custom rule packages, release 0.2.0
+# Phase 6: custom rule packages, release 0.3.0
 
 Make it easy for a project to write its own rules and run them in its builds,
 next to the built-in ones.
@@ -42,7 +42,7 @@ docs/custom-rules.md
    source).
 6. **CI.** Build and test the template against the local Lintable sources (path
    dependency), and run its source plugin on a fixture target.
-7. **Release.** `CHANGELOG.md` 0.2.0, and with Peter's go-ahead, tag `v0.2.0`.
+7. **Release.** `CHANGELOG.md` 0.3.0, and with Peter's go-ahead, tag `v0.3.0`.
 
 ## Verify
 
@@ -59,4 +59,4 @@ The output lists both `layout_lifecycle` and the template's rule.
 ## Done
 
 A project can copy the template, write a rule, test it and run it in its build,
-from source or prebuilt, following one guide. 0.2.0 is released. One commit.
+from source or prebuilt, following one guide. 0.3.0 is released. One commit.
