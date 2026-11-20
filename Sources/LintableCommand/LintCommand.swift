@@ -5,7 +5,7 @@ import LintableEngine
 struct LintCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "lint",
-        abstract: "Check Swift files with the rules the config enables."
+        abstract: "Check Swift files and String Catalogs with the rules the config enables."
     )
 
     @OptionGroup var configOptions: ConfigOptions
@@ -24,6 +24,15 @@ struct LintCommand: AsyncParsableCommand {
     @Flag(help: "Fail on warnings too.")
     var strict = false
 
+    @Option(
+        name: .customLong("release-gate"),
+        help: ArgumentHelp(
+            "Write a Swift file whose `#error` stops builds that match the config's `release_condition` "
+                + "while a rule with a higher `release_severity` reports violations. The file is empty otherwise."
+        )
+    )
+    var releaseGate: String?
+
     func run() async throws {
         let registry = try configOptions.registry()
         let configuration = try configOptions.load(registry: registry)
@@ -35,6 +44,9 @@ struct LintCommand: AsyncParsableCommand {
             cache: cacheOptions.cache(configuration: configuration, registry: registry)
         )
         let result = await linter.lint(files: files, baseline: try loadedBaseline(configuration))
+        if let releaseGate {
+            try writeReleaseGate(for: result, configuration: configuration, to: releaseGate)
+        }
         Console.output(renderer.render(result))
         result.internalErrors.forEach(Console.error)
         if !result.internalErrors.isEmpty {
@@ -42,6 +54,16 @@ struct LintCommand: AsyncParsableCommand {
         }
         if result.failed(strict: strict) {
             throw ExitCode(1)
+        }
+    }
+
+    private func writeReleaseGate(for result: LintResult, configuration: Configuration, to path: String) throws {
+        let source = ReleaseGate.source(blocking: result.releaseBlockers, condition: configuration.releaseCondition)
+        do {
+            try ReleaseGate.write(source, to: path)
+        } catch {
+            Console.error("Can't write the release gate to \(path).")
+            throw ExitCode(3)
         }
     }
 

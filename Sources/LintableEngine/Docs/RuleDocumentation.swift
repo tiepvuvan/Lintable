@@ -24,10 +24,12 @@ public enum RuleDocumentation {
             sections.append("## How to fix\n\n\(description.howToFix)")
         }
         if !description.triggeringExamples.isEmpty {
-            sections.append("## Reported\n\n" + description.triggeringExamples.map(render).joined(separator: "\n\n"))
+            let examples = description.triggeringExamples.map { render($0, language: fence(for: description)) }
+            sections.append("## Reported\n\n" + examples.joined(separator: "\n\n"))
         }
         if !description.nonTriggeringExamples.isEmpty {
-            sections.append("## Not reported\n\n" + description.nonTriggeringExamples.map(render).joined(separator: "\n\n"))
+            let examples = description.nonTriggeringExamples.map { render($0, language: fence(for: description)) }
+            sections.append("## Not reported\n\n" + examples.joined(separator: "\n\n"))
         }
         return sections.joined(separator: "\n\n") + "\n"
     }
@@ -40,12 +42,21 @@ public enum RuleDocumentation {
         return lines.joined(separator: "\n") + "\n"
     }
 
-    private static func render(_ example: Example) -> String {
+    private static func fence(for description: RuleDescription) -> String {
+        switch description.fileKind {
+        case .swift:
+            "swift"
+        case .stringCatalog:
+            "json"
+        }
+    }
+
+    private static func render(_ example: Example, language: String) -> String {
         var source = example.source
         for marker in Example.markerNames {
             source = source.replacingOccurrences(of: marker, with: "↓")
         }
-        let code = "```swift\n\(source)\n```"
+        let code = "```\(language)\n\(source)\n```"
         guard let options = example.options else { return code }
         return "With these options:\n\n```yaml\n\(options)\n```\n\n\(code)"
     }

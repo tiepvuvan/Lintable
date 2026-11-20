@@ -23,7 +23,7 @@ public enum ConfigurationError: Error, CustomStringConvertible, Equatable {
         case let .notAMapping(key):
             key.isEmpty ? "The config must be a mapping of keys to values." : "`\(key)` must be a mapping."
         case let .unknownKey(key):
-            "Unknown config key `\(key)`. Known keys: included, excluded, baseline, require_reasons, rules."
+            "Unknown config key `\(key)`. Known keys: included, excluded, baseline, require_reasons, release_condition, rules."
         case let .invalidValue(key, expected):
             "`\(key)` must be \(expected)."
         case let .unknownRule(id):

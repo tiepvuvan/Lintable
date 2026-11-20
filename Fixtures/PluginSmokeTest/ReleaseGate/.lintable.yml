@@ -1,0 +1,5 @@
+release_condition: "!DEBUG"
+rules:
+  missing_translation:
+    severity: warning
+    release_severity: error

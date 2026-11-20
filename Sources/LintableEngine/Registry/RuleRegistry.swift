@@ -2,13 +2,28 @@ import Foundation
 import LintableKit
 
 public struct RuleRegistry: Sendable {
+    enum RegisteredRule: Sendable {
+        case swift(any Rule.Type)
+        case stringCatalog(any CatalogRule.Type)
+
+        var description: RuleDescription {
+            switch self {
+            case let .swift(type):
+                type.description
+            case let .stringCatalog(type):
+                type.description
+            }
+        }
+    }
+
     public let packs: [any RulePack.Type]
-    private let ruleTypes: [RuleID: any Rule.Type]
+    private let ruleTypes: [RuleID: RegisteredRule]
 
     public init(packs: [any RulePack.Type]) throws {
-        var ruleTypes: [RuleID: any Rule.Type] = [:]
+        var ruleTypes: [RuleID: RegisteredRule] = [:]
         for pack in packs {
-            for rule in pack.rules {
+            let registered = pack.rules.map(RegisteredRule.swift) + pack.catalogRules.map(RegisteredRule.stringCatalog)
+            for rule in registered {
                 let id = rule.description.id
                 guard id.isWellFormed else {
                     throw RegistryError.malformedRuleID(id, pack: pack.name)
@@ -48,44 +63,91 @@ public struct RuleRegistry: Sendable {
     }
 
     public func defaultOptions(of id: RuleID) throws -> [String: Any] {
-        guard let ruleType = ruleTypes[id] else {
+        switch ruleTypes[id] {
+        case let .swift(type):
+            try Self.defaultOptions(of: type)
+        case let .stringCatalog(type):
+            try Self.defaultOptions(ofCatalogRule: type)
+        case nil:
             throw ConfigurationError.unknownRule(id)
         }
-        return try Self.defaultOptions(ruleType)
     }
 
-    public func makeRule(_ id: RuleID, options: [String: Any] = [:], severity: Severity? = nil) throws -> ConfiguredRule {
-        guard let ruleType = ruleTypes[id] else {
+    public func makeRule(
+        _ id: RuleID,
+        options: [String: Any] = [:],
+        severity: Severity? = nil,
+        releaseSeverity: Severity? = nil
+    ) throws -> ConfiguredRule {
+        switch ruleTypes[id] {
+        case let .swift(type):
+            try Self.makeSwiftRule(type, options: options, severity: severity, releaseSeverity: releaseSeverity)
+        case let .stringCatalog(type):
+            try Self.makeCatalogRule(type, options: options, severity: severity, releaseSeverity: releaseSeverity)
+        case nil:
             throw ConfigurationError.unknownRule(id)
         }
-        return try Self.make(ruleType, options: options, severity: severity)
     }
 
-    private static func make<R: Rule>(_ type: R.Type, options: [String: Any], severity: Severity?) throws -> ConfiguredRule {
-        let decoded = try decodeOptions(type, from: options)
+    private static func makeSwiftRule<R: Rule>(
+        _ type: R.Type,
+        options: [String: Any],
+        severity: Severity?,
+        releaseSeverity: Severity?
+    ) throws -> ConfiguredRule {
+        let decoded = try decodeOptions(R.Options.self, of: R.description.id, from: options)
         let rule = R(options: decoded)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        let fingerprint = (try? encoder.encode(decoded)).map { String(decoding: $0, as: UTF8.self) } ?? ""
         return ConfiguredRule(
             id: R.description.id,
             description: R.description,
             severity: severity ?? R.description.defaultSeverity,
-            optionsFingerprint: fingerprint,
-            body: { rule.check($0) }
+            releaseSeverity: releaseSeverity,
+            optionsFingerprint: fingerprint(of: decoded),
+            body: .swift { rule.check($0) }
         )
     }
 
-    private static func defaultOptions<R: Rule>(_ type: R.Type) throws -> [String: Any] {
+    private static func makeCatalogRule<R: CatalogRule>(
+        _ type: R.Type,
+        options: [String: Any],
+        severity: Severity?,
+        releaseSeverity: Severity?
+    ) throws -> ConfiguredRule {
+        let decoded = try decodeOptions(R.Options.self, of: R.description.id, from: options)
+        let rule = R(options: decoded)
+        return ConfiguredRule(
+            id: R.description.id,
+            description: R.description,
+            severity: severity ?? R.description.defaultSeverity,
+            releaseSeverity: releaseSeverity,
+            optionsFingerprint: fingerprint(of: decoded),
+            body: .stringCatalog { rule.check($0) }
+        )
+    }
+
+    private static func fingerprint(of options: some RuleOptions) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        return (try? encoder.encode(options)).map { String(decoding: $0, as: UTF8.self) } ?? ""
+    }
+
+    private static func defaultOptions<R: Rule>(of _: R.Type) throws -> [String: Any] {
+        try defaultOptions(R.Options.self)
+    }
+
+    private static func defaultOptions<R: CatalogRule>(ofCatalogRule _: R.Type) throws -> [String: Any] {
+        try defaultOptions(R.Options.self)
+    }
+
+    private static func defaultOptions<O: RuleOptions>(_ type: O.Type) throws -> [String: Any] {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
-        let data = try encoder.encode(R.Options())
+        let data = try encoder.encode(O())
         return (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
     }
 
-    private static func decodeOptions<R: Rule>(_ type: R.Type, from options: [String: Any]) throws -> R.Options {
-        let id = R.description.id
+    private static func decodeOptions<O: RuleOptions>(_ type: O.Type, of id: RuleID, from options: [String: Any]) throws -> O {
         let defaults = try defaultOptions(type)
         let unknown = Set(options.keys).subtracting(defaults.keys).sorted()
         guard unknown.isEmpty else {
@@ -96,7 +158,7 @@ public struct RuleRegistry: Sendable {
             let data = try JSONSerialization.data(withJSONObject: merged)
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
-            return try decoder.decode(R.Options.self, from: data)
+            return try decoder.decode(type, from: data)
         } catch let error as DecodingError {
             throw ConfigurationError.invalidOptions(rule: id, message: Self.describe(error))
         }

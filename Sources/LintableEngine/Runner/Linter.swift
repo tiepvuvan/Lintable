@@ -6,12 +6,20 @@ public struct LintResult: Sendable {
     public let fileCount: Int
     public let rules: [RuleDescription]
     public let internalErrors: [String]
+    public let releaseBlockers: [ReportedViolation]
 
-    public init(violations: [ReportedViolation], fileCount: Int, rules: [RuleDescription], internalErrors: [String]) {
+    public init(
+        violations: [ReportedViolation],
+        fileCount: Int,
+        rules: [RuleDescription],
+        internalErrors: [String],
+        releaseBlockers: [ReportedViolation] = []
+    ) {
         self.violations = violations
         self.fileCount = fileCount
         self.rules = rules
         self.internalErrors = internalErrors
+        self.releaseBlockers = releaseBlockers
     }
 
     public var errorCount: Int {
@@ -58,46 +66,66 @@ public struct Linter: Sendable {
         if let baseline {
             violations = baseline.filter(violations)
         }
+        let blockingRules = Set(configuration.rules.filter(\.blocksReleaseBuilds).map(\.id))
         let descriptions = configuration.rules.map(\.description) + EngineRules.descriptions
         return LintResult(
             violations: violations,
             fileCount: files.count,
             rules: descriptions.sorted { $0.id < $1.id },
-            internalErrors: results.flatMap(\.internalErrors).sorted()
+            internalErrors: results.flatMap(\.internalErrors).sorted(),
+            releaseBlockers: violations.filter { blockingRules.contains($0.ruleID) }
         )
     }
 
     public func lint(path: String, source: String) -> (violations: [ReportedViolation], internalErrors: [String]) {
+        if FileKind(path: path) == .stringCatalog {
+            return lintCatalog(path: path, source: source)
+        }
+        return lintSwift(path: path, source: source)
+    }
+
+    private func lintSwift(path: String, source: String) -> (violations: [ReportedViolation], internalErrors: [String]) {
         let file = LintFile(path: path, source: source)
         let relativePath = FileDiscovery.relativePath(of: path, root: configuration.rootDirectory)
+        let report = ViolationReport(
+            path: path,
+            relativePath: relativePath,
+            length: source.utf8.count,
+            location: file.location(ofUTF8Offset:),
+            lineText: file.lineText
+        )
         var violations: [ReportedViolation] = []
         var internalErrors: [String] = []
-        let length = source.utf8.count
-        for rule in configuration.rules {
-            for violation in rule.check(file) {
-                guard violation.position.utf8Offset >= 0, violation.position.utf8Offset <= length else {
-                    internalErrors.append("Rule `\(rule.id)` reported a position outside \(relativePath).")
-                    continue
-                }
-                let location = file.location(of: violation.position)
-                violations.append(ReportedViolation(
-                    ruleID: rule.id,
-                    severity: rule.severity,
-                    message: violation.message,
-                    path: path,
-                    relativePath: relativePath,
-                    line: location.line,
-                    column: location.column,
-                    lineText: file.lineText(location.line),
-                    notes: violation.notes.map { note in
-                        let noteLocation = file.location(of: note.position)
-                        return .init(message: note.message, line: noteLocation.line, column: noteLocation.column)
-                    }
-                ))
-            }
+        for rule in configuration.rules where rule.fileKind == .swift {
+            report.add(rule.check(file), from: rule, to: &violations, errors: &internalErrors)
         }
         let processor = DirectiveProcessor(configuration: configuration, knownRuleIDs: Set(registry.ruleIDs))
         return (processor.apply(violations, in: file, relativePath: relativePath).sorted(), internalErrors)
+    }
+
+    private func lintCatalog(path: String, source: String) -> (violations: [ReportedViolation], internalErrors: [String]) {
+        let rules = configuration.rules.filter { $0.fileKind == .stringCatalog }
+        guard !rules.isEmpty else { return ([], []) }
+        let relativePath = FileDiscovery.relativePath(of: path, root: configuration.rootDirectory)
+        let catalog: StringCatalog
+        do {
+            catalog = try StringCatalog(path: path, source: source)
+        } catch {
+            return ([], ["\(relativePath) isn't a valid String Catalog. \(error)"])
+        }
+        let report = ViolationReport(
+            path: path,
+            relativePath: relativePath,
+            length: source.utf8.count,
+            location: catalog.location(ofUTF8Offset:),
+            lineText: catalog.lineText
+        )
+        var violations: [ReportedViolation] = []
+        var internalErrors: [String] = []
+        for rule in rules {
+            report.add(rule.check(catalog), from: rule, to: &violations, errors: &internalErrors)
+        }
+        return (violations.sorted(), internalErrors)
     }
 
     private struct FileResult: Sendable {
@@ -106,6 +134,9 @@ public struct Linter: Sendable {
     }
 
     private func lintFile(atPath path: String) -> FileResult {
+        if FileKind(path: path) == .stringCatalog, !configuration.hasCatalogRules {
+            return FileResult(violations: [], internalErrors: [])
+        }
         guard let data = FileManager.default.contents(atPath: path) else {
             return FileResult(violations: [], internalErrors: ["Can't read \(path)."])
         }
@@ -118,5 +149,37 @@ public struct Linter: Sendable {
             cache?.store(result.violations, path: path, source: source)
         }
         return FileResult(violations: result.violations, internalErrors: result.internalErrors)
+    }
+}
+
+private struct ViolationReport {
+    let path: String
+    let relativePath: String
+    let length: Int
+    let location: (Int) -> LineColumn
+    let lineText: (Int) -> String
+
+    func add(_ found: [Violation], from rule: ConfiguredRule, to violations: inout [ReportedViolation], errors: inout [String]) {
+        for violation in found {
+            guard violation.position.utf8Offset >= 0, violation.position.utf8Offset <= length else {
+                errors.append("Rule `\(rule.id)` reported a position outside \(relativePath).")
+                continue
+            }
+            let place = location(violation.position.utf8Offset)
+            violations.append(ReportedViolation(
+                ruleID: rule.id,
+                severity: rule.severity,
+                message: violation.message,
+                path: path,
+                relativePath: relativePath,
+                line: place.line,
+                column: place.column,
+                lineText: lineText(place.line),
+                notes: violation.notes.map { note in
+                    let notePlace = location(note.position.utf8Offset)
+                    return .init(message: note.message, line: notePlace.line, column: notePlace.column)
+                }
+            ))
+        }
     }
 }

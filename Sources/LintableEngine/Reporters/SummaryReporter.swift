@@ -22,6 +22,10 @@ public struct SummaryReporter: Reporter {
             lines.append("")
         }
         lines.append(summaryLine(result))
+        if !result.releaseBlockers.isEmpty {
+            let count = result.releaseBlockers.count
+            lines.append("\(count) \(count == 1 ? "warning stops" : "warnings stop") release builds.")
+        }
         let counts = Dictionary(grouping: result.violations, by: \.ruleID).mapValues(\.count)
         for id in counts.keys.sorted() {
             lines.append("  \(id.rawValue): \(counts[id] ?? 0)")

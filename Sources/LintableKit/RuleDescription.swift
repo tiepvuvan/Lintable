@@ -9,6 +9,7 @@ public struct RuleDescription: Sendable {
     public var triggeringExamples: [Example]
     public var nonTriggeringExamples: [Example]
     public var howToFix: String
+    public var fileKind: FileKind
 
     public init(
         id: RuleID,
@@ -20,7 +21,8 @@ public struct RuleDescription: Sendable {
         optionDescriptions: [String: String] = [:],
         triggeringExamples: [Example] = [],
         nonTriggeringExamples: [Example] = [],
-        howToFix: String = ""
+        howToFix: String = "",
+        fileKind: FileKind = .swift
     ) {
         self.id = id
         self.name = name
@@ -32,6 +34,7 @@ public struct RuleDescription: Sendable {
         self.triggeringExamples = triggeringExamples
         self.nonTriggeringExamples = nonTriggeringExamples
         self.howToFix = howToFix
+        self.fileKind = fileKind
     }
 
     public var documentationURL: String {

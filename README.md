@@ -10,6 +10,9 @@ Swift with [swift-syntax](https://github.com/swiftlang/swift-syntax), gives ever
 rule the structure around each line, and makes rules like that easy to write,
 test and share.
 
+Lintable also checks String Catalogs: missing translations, plural forms and
+placeholders, which Xcode shows but never enforces.
+
 Lintable runs next to SwiftLint, not instead of it.
 
 > **Status: 0.1.0, the first release.** The first rule is
@@ -22,6 +25,12 @@ Lintable runs next to SwiftLint, not instead of it.
 | Rule | Checks |
 |---|---|
 | [`layout_lifecycle`](docs/rules/layout_lifecycle.md) | Views get geometry only during layout: `frame`, `bounds`, `center` or a layer's `position` are set in `layoutSubviews()` and its relatives, not in gesture handlers, callbacks or setters. |
+| [`missing_translation`](docs/rules/missing_translation.md) | A string has no finished translation in one of the String Catalog's languages. |
+| [`placeholder_mismatch`](docs/rules/placeholder_mismatch.md) | A translation's format specifiers don't match the source string's. |
+| [`missing_plural_form`](docs/rules/missing_plural_form.md) | A plural variation lacks a form its language needs. |
+| [`plural_form_without_number`](docs/rules/plural_form_without_number.md) | A plural form is used for several numbers but doesn't show the number. |
+| [`number_without_plural`](docs/rules/number_without_plural.md) | An English source string counts something without varying by plural. |
+| [`stale_string`](docs/rules/stale_string.md) | A String Catalog keeps a string the code no longer uses. |
 
 Rules are opt-in: a project lists the ones it wants in `.lintable.yml`.
 
@@ -63,6 +72,34 @@ Violations show up in Xcode and fail the build:
 ```
 Sources/Chart/ChartView.swift:42:9: error: `center.x` is set in `handlePan(_:)`, outside the layout pass. Store the state, call `setNeedsLayout()`, and set it in `layoutSubviews()` or a private `layout…` helper. (layout_lifecycle)
 ```
+
+## String Catalogs
+
+The plugin also reads each target's `.xcstrings` files, and the localization rules
+check them:
+
+```yaml
+release_condition: "!DEBUG"
+rules:
+  missing_translation:
+    severity: warning
+    release_severity: error
+  placeholder_mismatch:
+  missing_plural_form:
+  plural_form_without_number:
+  number_without_plural:
+  stale_string:
+```
+
+A rule whose `release_severity` is above its `severity` reports as usual, and stops
+the builds where `release_condition` holds: the plugin writes
+`LintableReleaseGate.swift` into the target, and while such a rule reports
+violations the file holds an `#error` inside `#if !DEBUG`. Debug builds warn about a
+new untranslated string; Release builds and archives stop until it's translated.
+`lintable lint --release-gate <path>` writes the same file.
+
+The plural rules use the CLDR plural rules for whole numbers, and know that
+Foundation uses a `zero` form for 0 in every language.
 
 ## The command line
 

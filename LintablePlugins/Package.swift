@@ -16,7 +16,7 @@ let package = Package(
         ),
         .plugin(
             name: "LintableCommandPlugin",
-            capability: .command(intent: .custom(verb: "lintable", description: "Check Swift files with Lintable.")),
+            capability: .command(intent: .custom(verb: "lintable", description: "Check Swift files and String Catalogs with Lintable.")),
             dependencies: ["LintableBinary"]
         ),
     ]

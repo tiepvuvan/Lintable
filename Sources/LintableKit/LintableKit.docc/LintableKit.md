@@ -62,3 +62,18 @@ struct NoPrintInViewsRule: Rule {
 - ``Reference``
 - ``ClosureInvocation``
 - ``AssignmentTarget``
+- ``LineMap``
+
+### Checking String Catalogs
+
+- ``CatalogRule``
+- ``StringCatalog``
+- ``StringCatalogError``
+- ``PluralRules``
+- ``PluralCategory``
+- ``FormatSpecifier``
+- ``FileKind``
+- ``JSONDocument``
+- ``JSONValue``
+- ``JSONMember``
+- ``JSONParseError``

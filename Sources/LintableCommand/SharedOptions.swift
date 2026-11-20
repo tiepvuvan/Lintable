@@ -40,7 +40,7 @@ struct SelectionOptions: ParsableArguments {
     @Argument(help: "Files or folders to check. Defaults to the config's `included` paths.")
     var paths: [String] = []
 
-    @Option(name: .customLong("files-from"), help: "A file listing the Swift files to check, one path per line.")
+    @Option(name: .customLong("files-from"), help: "A file listing the Swift files and String Catalogs to check, one path per line.")
     var filesFrom: String?
 
     func files(configuration: Configuration) throws -> [String] {

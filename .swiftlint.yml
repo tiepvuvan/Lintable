@@ -9,6 +9,7 @@ excluded:
   - .build
   - Fixtures/PluginSmokeTest/Failing/.build
   - Fixtures/PluginSmokeTest/Passing/.build
+  - Fixtures/PluginSmokeTest/ReleaseGate/.build
 disabled_rules:
   - optional_data_string_conversion
 opt_in_rules:

@@ -75,6 +75,41 @@ enum BrokenRules: RulePack {
     static let rules: [any Rule.Type] = [OutOfBoundsRule.self]
 }
 
+struct ForbiddenKeyRule: CatalogRule {
+    static let description = RuleDescription(
+        id: "forbidden_key",
+        name: "Forbidden key",
+        summary: "A String Catalog key named forbidden.",
+        rationale: "A catalog rule for testing the engine.",
+        category: RuleCategory(id: "test", name: "Test"),
+        fileKind: .stringCatalog
+    )
+
+    init(options _: NoOptions) {}
+
+    func check(_ catalog: StringCatalog) -> [Violation] {
+        catalog.entries.filter { $0.key == "forbidden" }.map { Violation(position: $0.position, message: "The key is forbidden.") }
+    }
+}
+
+enum CatalogTestRules: RulePack {
+    static let name = "CatalogTest"
+    static let version = "1"
+    static let rules: [any Rule.Type] = [ForbiddenNameRule.self]
+    static let catalogRules: [any CatalogRule.Type] = [ForbiddenKeyRule.self]
+}
+
+let forbiddenKeyCatalog = """
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "allowed" : { },
+    "forbidden" : { }
+  },
+  "version" : "1.0"
+}
+"""
+
 final class TemporaryDirectory {
     let url: URL
 

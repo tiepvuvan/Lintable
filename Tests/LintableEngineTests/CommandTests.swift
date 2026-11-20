@@ -41,6 +41,17 @@ import Testing
         #expect(await run(arguments("lint", clean, ["--no-cache", "--reporter", "xcode", clean.url.path])) == 0)
     }
 
+    @Test func lintWritesTheReleaseGate() async throws {
+        let directory = try TemporaryDirectory()
+        try directory.write(".lintable.yml", "release_condition: \"!DEBUG\"\nrules:\n  forbidden_key:\n    release_severity: error")
+        try directory.write("Resources/Localizable.xcstrings", forbiddenKeyCatalog)
+        let gate = directory.url.appendingPathComponent("Output/LintableReleaseGate.swift")
+        let extra = ["--no-cache", "--reporter", "xcode", "--release-gate", gate.path, directory.url.path]
+        #expect(await run(arguments("lint", directory, extra), packs: [CatalogTestRules.self]) == 0)
+        let source = String(decoding: try Data(contentsOf: gate), as: UTF8.self)
+        #expect(source.hasPrefix("#if !DEBUG\n#error(\"1 forbidden_key warning stops release builds."))
+    }
+
     @Test func strictFailsOnWarnings() async throws {
         let directory = try project("let a = forbidden\n", config: "rules:\n  forbidden_name:\n    severity: warning")
         let base = arguments("lint", directory, ["--no-cache", "--reporter", "xcode", directory.url.path])

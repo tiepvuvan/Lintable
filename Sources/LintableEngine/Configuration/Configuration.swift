@@ -12,12 +12,17 @@ public struct Configuration: Sendable {
     public let excluded: [String]
     public let baselinePath: String?
     public let requireReasons: Bool
+    public let releaseCondition: String?
     public let rules: [ConfiguredRule]
     public let engineSeverities: [RuleID: Severity]
     public let fingerprint: String
 
     public var enabledRuleIDs: Set<RuleID> {
         Set(rules.map(\.id))
+    }
+
+    public var hasCatalogRules: Bool {
+        rules.contains { $0.fileKind == .stringCatalog }
     }
 
     public func severity(ofEngineRule id: RuleID) -> Severity {
@@ -70,7 +75,6 @@ public struct Configuration: Sendable {
         } else {
             throw ConfigurationError.notAMapping(key: "")
         }
-        let knownKeys: Set<String> = ["included", "excluded", "baseline", "require_reasons", "rules"]
         if let unknown = mapping.keys.sorted().first(where: { !knownKeys.contains($0) }) {
             throw ConfigurationError.unknownKey(unknown)
         }
@@ -78,13 +82,17 @@ public struct Configuration: Sendable {
         let excluded = try stringList(mapping["excluded"], key: "excluded")
         let baseline = try optionalString(mapping["baseline"], key: "baseline")
         let requireReasons = try bool(mapping["require_reasons"], key: "require_reasons", default: true)
+        let releaseCondition = try compilationCondition(mapping["release_condition"], key: "release_condition")
         let (rules, engineSeverities) = try parseRules(mapping["rules"], registry: registry)
         let fingerprintParts = [
             included.joined(separator: ","),
             excluded.joined(separator: ","),
             baseline ?? "",
             String(requireReasons),
-            rules.map { "\($0.id)=\($0.severity.rawValue)\($0.optionsFingerprint)" }.joined(separator: ";"),
+            releaseCondition ?? "",
+            rules.map { rule in
+                "\(rule.id)=\(rule.severity.rawValue)/\(rule.releaseSeverity?.rawValue ?? "")\(rule.optionsFingerprint)"
+            }.joined(separator: ";"),
             engineSeverities.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value.rawValue)" }.joined(separator: ";"),
         ]
         return Configuration(
@@ -94,6 +102,7 @@ public struct Configuration: Sendable {
             excluded: excluded,
             baselinePath: baseline,
             requireReasons: requireReasons,
+            releaseCondition: releaseCondition,
             rules: rules,
             engineSeverities: engineSeverities,
             fingerprint: StableHash.hex(of: fingerprintParts.joined(separator: "\n"))
@@ -132,9 +141,30 @@ public struct Configuration: Sendable {
                 engineSeverities[id] = severity ?? .warning
                 continue
             }
-            configured.append(try registry.makeRule(id, options: options, severity: severity))
+            var releaseSeverity: Severity?
+            if let rawReleaseSeverity = options.removeValue(forKey: "release_severity") {
+                guard let text = rawReleaseSeverity as? String, let parsed = Severity(rawValue: text) else {
+                    throw ConfigurationError.invalidSeverity(rule: id, value: String(describing: rawReleaseSeverity))
+                }
+                releaseSeverity = parsed
+            }
+            configured.append(try registry.makeRule(id, options: options, severity: severity, releaseSeverity: releaseSeverity))
         }
         return (configured, engineSeverities)
+    }
+
+    static let knownKeys: Set<String> = ["included", "excluded", "baseline", "require_reasons", "release_condition", "rules"]
+
+    private static func compilationCondition(_ value: Any?, key: String) throws -> String? {
+        guard let value else { return nil }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_!&|() "))
+        guard let text = (value as? String)?.trimmingCharacters(in: .whitespaces),
+              !text.isEmpty,
+              text.unicodeScalars.allSatisfy(allowed.contains)
+        else {
+            throw ConfigurationError.invalidValue(key: key, expected: "a compilation condition such as `!DEBUG`")
+        }
+        return text
     }
 
     private static func stringKeyed(_ value: Any) -> [String: Any]? {

@@ -6,6 +6,23 @@ All notable changes are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- Localization rules for String Catalogs: `missing_translation`, `placeholder_mismatch`,
+  `missing_plural_form`, `plural_form_without_number`, `number_without_plural` and
+  `stale_string`, with the CLDR plural rules for whole numbers in about 200 languages.
+- `LintableKit`: `CatalogRule`, `StringCatalog`, `PluralRules`, `FormatSpecifier` and
+  `RulePack.catalogRules`; `LintableTesting`: `assertCatalogLint` and `verifyExamples(of:)`
+  for catalog rules.
+- `release_condition` and a per-rule `release_severity` in `.lintable.yml`, and
+  `lint --release-gate <path>`, which writes a Swift file whose `#error` stops builds
+  where the condition holds while such a rule reports violations. The build plugin
+  writes it into every target.
+
+### Changed
+
+- File discovery, `--files-from` and both plugins include `.xcstrings` files.
+
 ## 0.1.0 - 2026-11-19
 
 ### Added

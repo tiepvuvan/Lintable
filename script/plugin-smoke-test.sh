@@ -13,7 +13,8 @@ cp -R "$DIST/bundle/lintable.artifactbundle" "$ROOT/LintablePlugins/LintableBina
 
 FAILING="$ROOT/Fixtures/PluginSmokeTest/Failing"
 PASSING="$ROOT/Fixtures/PluginSmokeTest/Passing"
-rm -rf "$FAILING/.build" "$PASSING/.build"
+GATE="$ROOT/Fixtures/PluginSmokeTest/ReleaseGate"
+rm -rf "$FAILING/.build" "$PASSING/.build" "$GATE/.build"
 
 if OUTPUT="$(swift build --package-path "$FAILING" 2>&1)"; then
   echo "$OUTPUT"
@@ -29,3 +30,22 @@ echo "Failing fixture: stopped by layout_lifecycle, as expected."
 
 swift build --package-path "$PASSING"
 echo "Passing fixture: built."
+
+if ! OUTPUT="$(swift build --package-path "$GATE" 2>&1)"; then
+  echo "$OUTPUT"
+  echo "The release gate fixture failed a debug build; a missing translation should only warn there." >&2
+  exit 1
+fi
+echo "Release gate fixture: debug build passed with the missing translation."
+
+if OUTPUT="$(swift build --package-path "$GATE" -c release 2>&1)"; then
+  echo "$OUTPUT"
+  echo "The release gate fixture built in release; the gate should have stopped it." >&2
+  exit 1
+fi
+if ! grep -q "missing_translation warning stops release builds" <<< "$OUTPUT"; then
+  echo "$OUTPUT"
+  echo "The release build failed without the release gate's error." >&2
+  exit 1
+fi
+echo "Release gate fixture: release build stopped by the gate, as expected."

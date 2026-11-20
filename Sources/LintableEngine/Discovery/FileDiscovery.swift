@@ -1,4 +1,5 @@
 import Foundation
+import LintableKit
 
 public enum FileDiscovery {
     public static func resolve(_ path: String, against base: URL) -> URL {
@@ -27,7 +28,7 @@ public enum FileDiscovery {
 
     public static func filter(_ paths: [String], configuration: Configuration) -> [String] {
         Array(Set(paths
-            .filter { $0.hasSuffix(".swift") }
+            .filter { FileKind(path: $0) != nil }
             .map { URL(fileURLWithPath: $0).standardizedFileURL.path }
             .filter { !isExcluded($0, configuration: configuration) }))
             .sorted()
@@ -68,7 +69,7 @@ public enum FileDiscovery {
                     }
                     continue
                 }
-                if !isFolder, path.hasSuffix(".swift") {
+                if !isFolder, FileKind(path: path) != nil {
                     found.insert(path)
                 }
             }
