@@ -1,4 +1,4 @@
-# After 0.3.0
+# After 0.4.0
 
 Ideas, not commitments. Each new rule starts as a rule proposal issue and has to
 meet the bar in [README.md](README.md).

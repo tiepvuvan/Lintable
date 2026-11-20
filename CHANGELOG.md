@@ -6,6 +6,17 @@ All notable changes are listed here. The format follows
 
 ## Unreleased
 
+## 0.3.0 - 2026-11-20
+
+### Added
+
+- Localization rules for Swift code: `hardcoded_ui_text` (a literal reaches a label,
+  title, alert or accessibility label without being localized), `english_plural_logic`
+  (`count == 1 ? "day" : "days"`), `number_as_text_in_localized_string` (a count
+  turned into text inside a localized string, which can't vary by plural) and
+  `localized_concatenation` (text built by joining localized pieces).
+- `missing_translator_comment`: a String Catalog key with no comment for translators.
+
 ## 0.2.0 - 2026-11-20
 
 ### Added
