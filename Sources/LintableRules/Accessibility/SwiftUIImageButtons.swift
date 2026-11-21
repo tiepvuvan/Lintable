@@ -98,9 +98,10 @@ private struct ViewContent {
     ]
 
     private(set) var images = 0
+    private(set) var unlabelledImages = 0
     private(set) var hasText = false
     private(set) var hasUnknownView = false
-    private(set) var isLabelled = false
+    private var labelledDepth = 0
     private let isLabelModifier: (FunctionCallExprSyntax) -> Bool
 
     init(statements: CodeBlockItemListSyntax, isLabelModifier: @escaping (FunctionCallExprSyntax) -> Bool) {
@@ -109,7 +110,7 @@ private struct ViewContent {
     }
 
     var showsOnlyImages: Bool {
-        images > 0 && !hasText && !hasUnknownView && !isLabelled
+        unlabelledImages > 0 && !hasText && !hasUnknownView
     }
 
     private mutating func add(_ statements: CodeBlockItemListSyntax) {
@@ -169,10 +170,10 @@ private struct ViewContent {
 
     private mutating func add(_ call: FunctionCallExprSyntax) {
         if let member = call.calledExpression.as(MemberAccessExprSyntax.self), let base = member.base {
-            if isLabelModifier(call) {
-                isLabelled = true
-            }
+            let labels = isLabelModifier(call)
+            labelledDepth += labels ? 1 : 0
             add(base)
+            labelledDepth -= labels ? 1 : 0
             return
         }
         guard let name = call.calledExpression.as(DeclReferenceExprSyntax.self)?.baseName.text else {
@@ -180,10 +181,10 @@ private struct ViewContent {
             return
         }
         if Self.imageViews.contains(name) {
-            if call.arguments.contains(where: { $0.label?.text == "label" }) {
-                isLabelled = true
-            }
             images += 1
+            if labelledDepth == 0, !call.arguments.contains(where: { $0.label?.text == "label" }) {
+                unlabelledImages += 1
+            }
         } else if Self.textViews.contains(name) {
             hasText = true
         } else if Self.containers.contains(name) {

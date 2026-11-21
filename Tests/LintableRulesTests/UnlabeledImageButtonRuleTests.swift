@@ -97,6 +97,38 @@ import Testing
         """)
     }
 
+    @Test func needsALabelOnEveryImageItCanShow() {
+        assertLint(UnlabeledImageButtonRule.self, """
+        struct MoodButton: View {
+            var body: some View {
+                1️⃣Button(action: toggle) {
+                    if isFocused {
+                        Image("Mood Filled")
+                            .accessibilityLabel(Text("Mood", comment: "Opens the mood picker."))
+                    } else {
+                        Image("Mood Stroke")
+                    }
+                }
+                Button(action: toggle) {
+                    if isFocused {
+                        Image("Mood Filled")
+                    } else {
+                        Image("Mood Stroke")
+                    }
+                }
+                .accessibilityLabel(Text("Mood", comment: "Opens the mood picker."))
+                Button(action: toggle) {
+                    ZStack {
+                        Image("Badge")
+                        Image("Mood Stroke")
+                    }
+                    .accessibilityLabel(Text("Mood", comment: "Opens the mood picker."))
+                }
+            }
+        }
+        """)
+    }
+
     @Test func acceptsALabelAddedWhereTheButtonIsUsed() {
         assertLint(UnlabeledImageButtonRule.self, """
         struct Header: View {
