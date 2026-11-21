@@ -9,5 +9,6 @@ public struct RuleCategory: Hashable, Sendable, Codable {
 
     public static let layout = RuleCategory(id: "layout", name: "UIKit and AppKit layout")
     public static let localization = RuleCategory(id: "localization", name: "Localization")
+    public static let accessibility = RuleCategory(id: "accessibility", name: "Accessibility")
     public static let engine = RuleCategory(id: "engine", name: "Lintable")
 }

@@ -1,0 +1,3 @@
+rules:
+  no_print_in_views:
+    severity: error

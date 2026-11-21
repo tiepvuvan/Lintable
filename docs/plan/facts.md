@@ -1,6 +1,6 @@
 # Facts
 
-Updated on 2026-11-18, after phases 0–5 were built. "Verified" means checked on the
+Updated on 2026-11-21, after phases 0–6 were built. "Verified" means checked on the
 machine or in the code; "assumed" means a later phase or CI has to confirm it.
 
 ## Verified
@@ -31,6 +31,25 @@ machine or in the code; "assumed" means a later phase or CI has to confirm it.
 - `script/plugin-smoke-test.sh` passes on macOS: the failing fixture is stopped by
   `layout_lifecycle`, and the passing one builds. `swift package lintable` runs the
   command plugin and prints the summary.
+
+### Custom rule packages
+
+Checked on 2026-11-21 while building phase 6:
+
+- A build-tool plugin whose tool is built from source returns a build command. With
+  the target's files and the config as inputs and the release gate file as its only
+  output, `swift build` skips it when nothing changed, runs it again after an edit,
+  and runs it again after it failed.
+- A local binary target whose artifact bundle is missing stops every build of the
+  package, even of a target that doesn't use it ("does not contain a binary
+  artifact"), so a prebuilt plugin lives in its own package.
+- SwiftPM names a path dependency after its folder: a dependency at
+  `…/lintable-phase6` is `lintable-phase6`, and `.product(…, package: "Lintable")`
+  fails. A symlink named `Lintable` to the checkout works, which is what
+  `script/custom-linter-smoke-test.sh` uses.
+- On this Mac a clean debug build of a package that uses the template's source plugin
+  took about 22 seconds, with SwiftPM's prebuilt swift-syntax. A release build of
+  `acme-lint` for the prebuilt plugin took about 2 minutes.
 
 ### CI
 

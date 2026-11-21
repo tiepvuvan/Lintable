@@ -47,7 +47,7 @@ Decisions made while designing, which Peter can still change:
 
 ## Phases
 
-| Phase | Doc | What | Depends on | Release | Status (2026-11-18) |
+| Phase | Doc | What | Depends on | Release | Status (2026-11-21) |
 |---|---|---|---|---|---|
 | 0 | [phase-0-foundation.md](phase-0-foundation.md) | Package skeleton, license, CI, contributor docs | — | | Built; CI on macOS (Swift 6.1.2) and Linux (Swift 6.4) |
 | 1 | [phase-1-kit.md](phase-1-kit.md) | `LintableKit`: the rule API and the syntax index rules share | 0 | | Built, 26 tests |
@@ -57,7 +57,7 @@ Decisions made while designing, which Peter can still change:
 | 5 | [phase-5-release.md](phase-5-release.md) | Build-tool and command plugins, the release pipeline, `LintablePlugins` | 4 | 0.1.0 | Released as 0.1.0 on 2026-11-19 |
 | — | [CHANGELOG.md](../../CHANGELOG.md) | Localization rules for String Catalogs and the release gate, built for Habitify | 5 | 0.2.0 | Released as 0.2.0 on 2026-11-20 |
 | — | [CHANGELOG.md](../../CHANGELOG.md) | Localization rules for Swift code: hard-coded UI text, English plural logic, numbers as text, concatenation | 5 | 0.3.0 | Released as 0.3.0 on 2026-11-20 |
-| 6 | [phase-6-custom-rules.md](phase-6-custom-rules.md) | Custom rule packages: template, source-built plugin, guide | 5 | 0.4.0 | Not started |
+| 6 | [phase-6-custom-rules.md](phase-6-custom-rules.md) | Custom rule packages: template, source-built plugin, guide; with `unlabeled_image_button`, `missing_package_string` and catalog rules that read other catalogs, built for Habitify | 5 | 0.4.0 | Released as 0.4.0 on 2026-11-21 |
 
 The phases run in order: each builds on the one before. Lintable is built
 first; Habitify adopts it after 0.1.0.

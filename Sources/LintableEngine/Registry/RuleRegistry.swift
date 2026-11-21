@@ -121,7 +121,8 @@ public struct RuleRegistry: Sendable {
             severity: severity ?? R.description.defaultSeverity,
             releaseSeverity: releaseSeverity,
             optionsFingerprint: fingerprint(of: decoded),
-            body: .stringCatalog { rule.check($0) }
+            referencedCatalogPaths: rule.referencedCatalogPaths,
+            body: .stringCatalog { rule.check($0, in: $1) }
         )
     }
 

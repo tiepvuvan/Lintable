@@ -92,11 +92,47 @@ struct ForbiddenKeyRule: CatalogRule {
     }
 }
 
+struct SharedKeysRule: CatalogRule {
+    struct Options: RuleOptions {
+        var source = ""
+    }
+
+    static let description = RuleDescription(
+        id: "shared_keys",
+        name: "Shared keys",
+        summary: "A String Catalog lacks a key of another catalog.",
+        rationale: "A catalog rule that reads another catalog, for testing the engine.",
+        category: RuleCategory(id: "test", name: "Test"),
+        fileKind: .stringCatalog
+    )
+
+    let options: Options
+
+    init(options: Options) {
+        self.options = options
+    }
+
+    var referencedCatalogPaths: [String] {
+        [options.source]
+    }
+
+    func check(_ catalog: StringCatalog) -> [Violation] {
+        []
+    }
+
+    func check(_ catalog: StringCatalog, in context: CatalogContext) -> [Violation] {
+        guard !context.isCatalog(atPath: options.source) else { return [] }
+        let keys = Set(catalog.entries.map(\.key))
+        let missing = context.catalog(atPath: options.source)?.entries.map(\.key).filter { !keys.contains($0) } ?? ["(unreadable)"]
+        return missing.map { Violation(position: AbsolutePosition(utf8Offset: 0), message: "Missing \($0) from \(context.relativePath).") }
+    }
+}
+
 enum CatalogTestRules: RulePack {
     static let name = "CatalogTest"
     static let version = "1"
     static let rules: [any Rule.Type] = [ForbiddenNameRule.self]
-    static let catalogRules: [any CatalogRule.Type] = [ForbiddenKeyRule.self]
+    static let catalogRules: [any CatalogRule.Type] = [ForbiddenKeyRule.self, SharedKeysRule.self]
 }
 
 let forbiddenKeyCatalog = """

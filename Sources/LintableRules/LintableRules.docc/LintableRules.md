@@ -9,3 +9,4 @@ Lintable's built-in rules.
 - ``BuiltInRules``
 - ``LayoutLifecycleRule``
 - ``LayoutLifecycleOptions``
+- ``UnlabeledImageButtonRule``

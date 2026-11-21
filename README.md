@@ -16,11 +16,12 @@ shows but never enforces.
 
 Lintable runs next to SwiftLint, not instead of it.
 
-> **Status: 0.3.0.** The rules are
+> **Status: 0.4.0.** The rules are
 > [`layout_lifecycle`](docs/rules/layout_lifecycle.md), four localization rules for
-> Swift code and seven for String Catalogs, and [Habitify](https://www.habitify.me)
-> is the first project adopting them. The design and build plan are in
-> [docs/plan](docs/plan/README.md).
+> Swift code, eight for String Catalogs and one accessibility rule, and projects can
+> add their own ([docs/custom-rules.md](docs/custom-rules.md)).
+> [Habitify](https://www.habitify.me) is the first project adopting them. The design
+> and build plan are in [docs/plan](docs/plan/README.md).
 
 ## Rules
 
@@ -31,12 +32,14 @@ Lintable runs next to SwiftLint, not instead of it.
 | [`english_plural_logic`](docs/rules/english_plural_logic.md) | Code picks a singular or plural word by comparing a count with 1. |
 | [`number_as_text_in_localized_string`](docs/rules/number_as_text_in_localized_string.md) | A localized string interpolates a number already turned into text. |
 | [`localized_concatenation`](docs/rules/localized_concatenation.md) | Text built by joining localized pieces. |
+| [`unlabeled_image_button`](docs/rules/unlabeled_image_button.md) | A button shows only an image and has no accessibility label. |
 | [`missing_translation`](docs/rules/missing_translation.md) | A string has no finished translation in one of the String Catalog's languages. |
 | [`placeholder_mismatch`](docs/rules/placeholder_mismatch.md) | A translation's format specifiers don't match the source string's. |
 | [`missing_plural_form`](docs/rules/missing_plural_form.md) | A plural variation lacks a form its language needs. |
 | [`plural_form_without_number`](docs/rules/plural_form_without_number.md) | A plural form is used for several numbers but doesn't show the number. |
 | [`number_without_plural`](docs/rules/number_without_plural.md) | An English source string counts something without varying by plural. |
 | [`stale_string`](docs/rules/stale_string.md) | A String Catalog keeps a string the code no longer uses. |
+| [`missing_package_string`](docs/rules/missing_package_string.md) | A target's String Catalog lacks a string that a package it links reads from the target's bundle. |
 | [`missing_translator_comment`](docs/rules/missing_translator_comment.md) | A String Catalog key has no comment for translators. |
 
 Rules are opt-in: a project lists the ones it wants in `.lintable.yml`.
@@ -50,7 +53,7 @@ Add the plugin to a Swift package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tiepvuvan/LintablePlugins", from: "0.3.0"),
+    .package(url: "https://github.com/tiepvuvan/LintablePlugins", from: "0.4.0"),
 ],
 targets: [
     .target(
@@ -166,7 +169,11 @@ import LintableRules
 await LintableCommand.main(rulePacks: [BuiltInRules.self, AcmeRules.self])
 ```
 
-A template package and guide arrive in 0.4.0.
+Copy [`Templates/CustomLinter`](Templates/CustomLinter) to start: a rule pack with an
+example rule, its tests, the `acme-lint` executable, a build-tool plugin that runs it
+from source, and a package for a prebuilt plugin like `LintablePlugins`.
+[docs/custom-rules.md](docs/custom-rules.md) covers writing, testing, packaging and
+releasing the rules.
 
 ## Contributing
 

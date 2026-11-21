@@ -24,7 +24,7 @@ public func verifyExamples<R: CatalogRule>(of rule: R.Type, sourceLocation: Test
         } catch {
             Issue.record(Comment(rawValue: "\(label) of `\(description.id)` isn't a String Catalog: \(error)."), sourceLocation: sourceLocation)
         }
-        assertCatalogLint(R.self, options: example.options, example.source, sourceLocation: sourceLocation)
+        assertCatalogLint(R.self, options: example.options, example.source, files: example.files, sourceLocation: sourceLocation)
     }
 }
 
@@ -49,7 +49,7 @@ private func verifyMarkers(
         if !parsed.markers.isEmpty {
             Issue.record(Comment(rawValue: "Non-triggering example \(index + 1) of `\(description.id)` has markers."), sourceLocation: sourceLocation)
         }
-        check(Example(parsed.source, options: example.options), parsed, "Non-triggering example \(index + 1)")
+        check(Example(parsed.source, options: example.options, files: example.files), parsed, "Non-triggering example \(index + 1)")
     }
 }
 

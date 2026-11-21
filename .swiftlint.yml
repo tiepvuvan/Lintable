@@ -4,12 +4,17 @@ included:
   - LintablePlugins/Plugins
   - LintablePlugins/Package.swift
   - Fixtures
+  - Templates
   - Package.swift
 excluded:
   - .build
   - Fixtures/PluginSmokeTest/Failing/.build
   - Fixtures/PluginSmokeTest/Passing/.build
   - Fixtures/PluginSmokeTest/ReleaseGate/.build
+  - Fixtures/CustomLinterSmokeTest/Source/.build
+  - Fixtures/CustomLinterSmokeTest/Binary/.build
+  - Templates/CustomLinter/.build
+  - Templates/CustomLinter/AcmeLintPlugins/.build
 disabled_rules:
   - optional_data_string_conversion
 opt_in_rules:

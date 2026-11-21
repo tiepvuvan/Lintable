@@ -16,7 +16,7 @@ struct RuleHarness {
         let setupError: String?
     }
 
-    static func run(_ subject: RuleSubject, options: String?, source: String) -> Outcome {
+    static func run(_ subject: RuleSubject, options: String?, source: String, files: [String: String] = [:]) -> Outcome {
         let lines = LineMap(source: source)
         do {
             let registry = try RuleRegistry(packs: [subject.pack])
@@ -25,7 +25,10 @@ struct RuleHarness {
                 rootDirectory: URL(fileURLWithPath: NSTemporaryDirectory()),
                 registry: registry
             )
-            let linter = Linter(configuration: configuration, registry: registry)
+            let root = configuration.rootDirectory.path
+            let linter = Linter(configuration: configuration, registry: registry) { url in
+                files[FileDiscovery.relativePath(of: url.path, root: URL(fileURLWithPath: root))]
+            }
             let path = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(subject.fileName).path
             let result = linter.lint(path: path, source: source)
             if let internalError = result.internalErrors.first {

@@ -22,6 +22,7 @@ public func assertCatalogLint<R: CatalogRule>(
     _ rule: R.Type,
     options: String? = nil,
     _ source: String,
+    files: [String: String] = [:],
     messages: [String: String] = [:],
     sourceLocation: Testing.SourceLocation = #_sourceLocation
 ) {
@@ -29,6 +30,7 @@ public func assertCatalogLint<R: CatalogRule>(
         of: RuleSubject(pack: SingleCatalogRulePack<R>.self, id: R.description.id, fileName: "Example.xcstrings"),
         options: options,
         source: source,
+        files: files,
         messages: messages,
         sourceLocation: sourceLocation
     )
@@ -38,11 +40,12 @@ func assertViolations(
     of subject: RuleSubject,
     options: String?,
     source: String,
+    files: [String: String] = [:],
     messages: [String: String],
     sourceLocation: Testing.SourceLocation
 ) {
     let parsed = Example(source).parse()
-    let outcome = RuleHarness.run(subject, options: options, source: parsed.source)
+    let outcome = RuleHarness.run(subject, options: options, source: parsed.source, files: files)
     let id = subject.id
     if let setupError = outcome.setupError {
         Issue.record(Comment(rawValue: "Couldn't run `\(id)`: \(setupError)"), sourceLocation: sourceLocation)

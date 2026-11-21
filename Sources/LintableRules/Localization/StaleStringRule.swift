@@ -1,10 +1,21 @@
 import LintableKit
 
 public struct StaleStringRule: CatalogRule {
-    public init(options _: NoOptions) {}
+    public struct Options: RuleOptions {
+        public var ignoredKeys: [String] = []
+
+        public init() {}
+    }
+
+    public let options: Options
+
+    public init(options: Options) {
+        self.options = options
+    }
 
     public func check(_ catalog: StringCatalog) -> [Violation] {
-        catalog.entries.filter(\.isStale).map { entry in
+        let ignoredKeys = Set(options.ignoredKeys)
+        return catalog.entries.filter { $0.isStale && !ignoredKeys.contains($0.key) }.map { entry in
             Violation(position: entry.position, message: "\(CatalogText.quoted(entry.key)) is stale: the code no longer uses it.")
         }
     }
@@ -21,6 +32,9 @@ public extension StaleStringRule {
         """,
         category: .localization,
         defaultSeverity: .warning,
+        optionDescriptions: [
+            "ignored_keys": "Keys kept stale on purpose, such as the strings of code that the build excludes for now.",
+        ],
         triggeringExamples: [
             Example("""
             {
@@ -54,8 +68,9 @@ public extension StaleStringRule {
             """),
         ],
         howToFix: """
-        Delete the string from the catalog. If the code builds the key at run time, which Xcode can't see, set its \
-        extraction state to `manual` instead.
+        Delete the string from the catalog. If the code builds the key at run time, or a package looks it up in this \
+        target's bundle, which Xcode can't see, set its extraction state to `manual` instead. Keep a string of code \
+        that the build excludes for now by listing it in `ignored_keys`.
         """,
         fileKind: .stringCatalog
     )

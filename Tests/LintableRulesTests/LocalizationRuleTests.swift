@@ -31,6 +31,7 @@ private func plural(_ forms: [(String, String)]) -> String {
         verifyExamples(of: PluralFormWithoutNumberRule.self)
         verifyExamples(of: NumberWithoutPluralRule.self)
         verifyExamples(of: StaleStringRule.self)
+        verifyExamples(of: MissingPackageStringRule.self)
     }
 }
 
@@ -180,5 +181,86 @@ private func plural(_ forms: [(String, String)]) -> String {
             1️⃣"Old" : { "extractionState" : "stale" },
             "New" : { "extractionState" : "extracted_with_value" }
         """), messages: ["1️⃣": "“Old” is stale: the code no longer uses it."])
+    }
+
+    @Test func skipsIgnoredKeys() {
+        assertCatalogLint(StaleStringRule.self, options: "ignored_keys: [Dormant]", catalog("""
+            1️⃣"Old" : { "extractionState" : "stale" },
+            "Dormant" : { "extractionState" : "stale" }
+        """))
+    }
+}
+
+@Suite struct MissingPackageStringRuleTests {
+    private static let package = catalog("""
+        "Log Habit" : { },
+        "Which habit?" : { },
+        "Arrive" : { },
+        "Removed" : { "extractionState" : "stale" }
+    """)
+
+    private static let options = """
+    hosts:
+      - catalog: App/Localizable.xcstrings
+        packages: [Kit/Localizable.xcstrings]
+    """
+
+    @Test func listsTheMissingStringsOnce() {
+        assertCatalogLint(
+            MissingPackageStringRule.self,
+            options: "hosts: [{ catalog: Example.xcstrings, packages: [Kit/Localizable.xcstrings] }]",
+            "1️⃣" + catalog("""
+                "Log Habit" : { "extractionState" : "manual" }
+            """),
+            files: ["Kit/Localizable.xcstrings": Self.package],
+            messages: ["1️⃣": "2 strings of Kit/Localizable.xcstrings are missing here: “Which habit?”, “Arrive”. Copy the entries with their comments and translations, and set their extraction state to manual."]
+        )
+    }
+
+    @Test func reportsStaleCopiesAndUnusedManualCopies() {
+        assertCatalogLint(
+            MissingPackageStringRule.self,
+            options: "hosts: [{ catalog: ./Example.xcstrings, packages: [Kit/Localizable.xcstrings] }]",
+            catalog("""
+                1️⃣"Log Habit" : { "extractionState" : "stale" },
+                "Which habit?" : { },
+                "Arrive" : { "extractionState" : "manual" },
+                2️⃣"Removed" : { "extractionState" : "manual" }
+            """),
+            files: ["Kit/Localizable.xcstrings": Self.package],
+            messages: [
+                "1️⃣": "“Log Habit” is stale here, but Kit/Localizable.xcstrings still uses it, and this target reads it from this catalog. Set its extraction state to manual.",
+                "2️⃣": "“Removed” is kept by hand for a package, but no package catalog listed for this catalog uses it anymore. Delete it.",
+            ]
+        )
+    }
+
+    @Test func keepsUnusedManualCopiesWhenAsked() {
+        assertCatalogLint(
+            MissingPackageStringRule.self,
+            options: "hosts: [{ catalog: Example.xcstrings, packages: [Kit/Localizable.xcstrings] }]\nreport_unused_copies: false",
+            catalog("""
+                "Log Habit" : { }, "Which habit?" : { }, "Arrive" : { },
+                "Dynamic key" : { "extractionState" : "manual" }
+            """),
+            files: ["Kit/Localizable.xcstrings": Self.package]
+        )
+    }
+
+    @Test func ignoresCatalogsThatAreNotHosts() {
+        assertCatalogLint(MissingPackageStringRule.self, options: Self.options, catalog("""
+            "Other" : { }
+        """), files: ["Kit/Localizable.xcstrings": Self.package])
+    }
+
+    @Test func reportsAPackageCatalogItCannotRead() {
+        assertCatalogLint(
+            MissingPackageStringRule.self,
+            options: "hosts: [{ catalog: Example.xcstrings, packages: [Kit/Missing.xcstrings] }]",
+            "1️⃣" + catalog("""
+                "Other" : { }
+            """),
+            messages: ["1️⃣": "The config names Kit/Missing.xcstrings as a package catalog for this one, but it isn't a String Catalog Lintable can read."]
+        )
     }
 }

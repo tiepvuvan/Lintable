@@ -3,10 +3,12 @@ public struct Example: Sendable, Hashable {
 
     public let source: String
     public let options: String?
+    public let files: [String: String]
 
-    public init(_ source: String, options: String? = nil) {
+    public init(_ source: String, options: String? = nil, files: [String: String] = [:]) {
         self.source = source
         self.options = options
+        self.files = files
     }
 
     public func parse() -> ParsedExample {

@@ -67,6 +67,7 @@ struct NoPrintInViewsRule: Rule {
 ### Checking String Catalogs
 
 - ``CatalogRule``
+- ``CatalogContext``
 - ``StringCatalog``
 - ``StringCatalogError``
 - ``PluralRules``

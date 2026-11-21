@@ -6,6 +6,38 @@ All notable changes are listed here. The format follows
 
 ## Unreleased
 
+## 0.4.0 - 2026-11-21
+
+### Added
+
+- Custom rule packages: `Templates/CustomLinter` is a working linter to copy, with a
+  rule pack, an example rule and its tests, the `acme-lint` executable, and
+  [docs/custom-rules.md](docs/custom-rules.md) as the guide.
+- Two ways to run a custom linter in builds: `AcmeLintSourcePlugin` builds it from
+  source and reruns only when the target's files or the config change; the
+  `AcmeLintPlugins` package runs a prebuilt binary the way `LintablePlugins` does.
+- `unlabeled_image_button` (accessibility): a SwiftUI button, link or menu whose label
+  holds only images, or a UIKit button or `UIBarButtonItem(image:)` that gets an image
+  but never a title or `accessibilityLabel`, so VoiceOver reads the image's name. New
+  rule category: Accessibility.
+- `missing_package_string`: a target's String Catalog lacks a string of a package
+  catalog it hosts, as App Intents metadata declared in a Swift package is read from the
+  catalog of the app or extension that exports it. It also reports stale copies and
+  manual copies no package uses anymore.
+- `stale_string` takes `ignored_keys`, for strings of code the build excludes for now.
+- Catalog rules can read other catalogs: `CatalogRule.referencedCatalogPaths` and
+  `check(_:in:)` with a `CatalogContext`. A change to a referenced catalog reruns the
+  rule instead of using the cache. `assertCatalogLint` takes `files`, and `Example`
+  takes `files` for such rules' examples.
+- `RuleDescription` takes a `documentationURL`, so custom rules link to their own pages
+  in SARIF and JSON reports.
+
+### Changed
+
+- The bundle scripts take a product and a package path, and `make-plugins-package.sh`
+  takes the plugins package and its binary target, so a custom linter releases with the
+  same scripts.
+
 ## 0.3.0 - 2026-11-20
 
 ### Added

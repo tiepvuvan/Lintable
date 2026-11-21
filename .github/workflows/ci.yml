@@ -34,3 +34,20 @@ jobs:
       - run: swift --version
       - run: swift build
       - run: swift test
+
+  custom-linter:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - name: Custom linter template, source and prebuilt plugins
+        run: script/custom-linter-smoke-test.sh --with-binary
+
+  custom-linter-linux:
+    runs-on: ubuntu-24.04
+    container: swift:6.4
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - name: Custom linter template and source plugin
+        run: script/custom-linter-smoke-test.sh

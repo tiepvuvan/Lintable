@@ -4,9 +4,9 @@ import LintableKit
 import Testing
 
 @Suite struct CatalogEngineTests {
-    private func linter(_ yaml: String, root: URL) throws -> Linter {
+    private func linter(_ yaml: String, root: URL, cache: Cache? = nil) throws -> Linter {
         let config = try configuration(yaml, root: root, packs: [CatalogTestRules.self])
-        return try Linter(configuration: config, registry: registry([CatalogTestRules.self]))
+        return try Linter(configuration: config, registry: registry([CatalogTestRules.self]), cache: cache)
     }
 
     @Test func discoversStringCatalogs() throws {
@@ -31,6 +31,22 @@ import Testing
         #expect(violation.lineText == "\"forbidden\" : { }")
         #expect(violation.relativePath == "Localizable.xcstrings")
         #expect(violation.severity == .warning)
+    }
+
+    @Test func catalogRulesReadTheCatalogsTheyReference() async throws {
+        let directory = try TemporaryDirectory()
+        let host = try directory.write("App/Localizable.xcstrings", forbiddenKeyCatalog)
+        try directory.write("Kit/Localizable.xcstrings", #"{ "strings" : { "allowed" : { }, "kit only" : { } } }"#)
+        let yaml = "rules:\n  shared_keys:\n    source: Kit/Localizable.xcstrings"
+        let cache = try Cache(directory: directory.url.appendingPathComponent("cache"), configuration: configuration(yaml, root: directory.url, packs: [CatalogTestRules.self]), registry: registry([CatalogTestRules.self]))
+        let first = try await linter(yaml, root: directory.url, cache: cache).lint(files: [host.path])
+        #expect(first.violations.map(\.message) == ["Missing kit only from App/Localizable.xcstrings."])
+        try directory.write("Kit/Localizable.xcstrings", #"{ "strings" : { "allowed" : { }, "forbidden" : { } } }"#)
+        let second = try await linter(yaml, root: directory.url, cache: cache).lint(files: [host.path])
+        #expect(second.violations.isEmpty)
+        try FileManager.default.removeItem(at: directory.url.appendingPathComponent("Kit/Localizable.xcstrings"))
+        let third = try await linter(yaml, root: directory.url, cache: cache).lint(files: [host.path])
+        #expect(third.violations.map(\.message) == ["Missing (unreadable) from App/Localizable.xcstrings."])
     }
 
     @Test func leavesCatalogsUnreadWithoutCatalogRules() async throws {

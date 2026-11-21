@@ -56,9 +56,15 @@ public enum RuleDocumentation {
         for marker in Example.markerNames {
             source = source.replacingOccurrences(of: marker, with: "↓")
         }
+        var parts: [String] = []
+        if let options = example.options {
+            parts.append("With these options:\n\n```yaml\n\(options)\n```")
+        }
+        for (path, contents) in example.files.sorted(by: { $0.key < $1.key }) {
+            parts.append("And `\(path)`:\n\n```\(language)\n\(contents)\n```")
+        }
         let code = "```\(language)\n\(source)\n```"
-        guard let options = example.options else { return code }
-        return "With these options:\n\n```yaml\n\(options)\n```\n\n\(code)"
+        return parts.isEmpty ? code : (parts + [code]).joined(separator: "\n\n")
     }
 
     private static func render(_ value: Any?) -> String {

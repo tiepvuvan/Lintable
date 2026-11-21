@@ -39,11 +39,35 @@ public struct Linter: Sendable {
     public let configuration: Configuration
     public let registry: RuleRegistry
     public let cache: Cache?
+    private let referencedCatalogs: [String: StringCatalog]
+    private let referencedCatalogsFingerprint: String
 
-    public init(configuration: Configuration, registry: RuleRegistry, cache: Cache? = nil) {
+    public init(
+        configuration: Configuration,
+        registry: RuleRegistry,
+        cache: Cache? = nil,
+        readFile: (URL) -> String? = Linter.readFile
+    ) {
         self.configuration = configuration
         self.registry = registry
         self.cache = cache
+        var catalogs: [String: StringCatalog] = [:]
+        var fingerprintParts: [String] = []
+        for path in Set(configuration.rules.flatMap(\.referencedCatalogPaths)).sorted() {
+            let url = FileDiscovery.resolve(path, against: configuration.rootDirectory)
+            guard let source = readFile(url) else {
+                fingerprintParts.append("\(path)=missing")
+                continue
+            }
+            fingerprintParts.append("\(path)=\(StableHash.hex(of: source))")
+            catalogs[path] = try? StringCatalog(path: url.path, source: source)
+        }
+        referencedCatalogs = catalogs
+        referencedCatalogsFingerprint = StableHash.hex(of: fingerprintParts.joined(separator: "\n"))
+    }
+
+    public static func readFile(_ url: URL) -> String? {
+        FileManager.default.contents(atPath: url.path).map { String(decoding: $0, as: UTF8.self) }
     }
 
     public func lint(files: [String], baseline: Baseline? = nil) async -> LintResult {
@@ -122,8 +146,9 @@ public struct Linter: Sendable {
         )
         var violations: [ReportedViolation] = []
         var internalErrors: [String] = []
+        let context = CatalogContext(relativePath: relativePath, catalogs: referencedCatalogs)
         for rule in rules {
-            report.add(rule.check(catalog), from: rule, to: &violations, errors: &internalErrors)
+            report.add(rule.check(catalog, in: context), from: rule, to: &violations, errors: &internalErrors)
         }
         return (violations.sorted(), internalErrors)
     }
@@ -141,12 +166,13 @@ public struct Linter: Sendable {
             return FileResult(violations: [], internalErrors: ["Can't read \(path)."])
         }
         let source = String(decoding: data, as: UTF8.self)
-        if let cached = cache?.load(path: path, source: source) {
+        let cacheKey = FileKind(path: path) == .stringCatalog ? source + "\n" + referencedCatalogsFingerprint : source
+        if let cached = cache?.load(path: path, source: cacheKey) {
             return FileResult(violations: cached, internalErrors: [])
         }
         let result = lint(path: path, source: source)
         if result.internalErrors.isEmpty {
-            cache?.store(result.violations, path: path, source: source)
+            cache?.store(result.violations, path: path, source: cacheKey)
         }
         return FileResult(violations: result.violations, internalErrors: result.internalErrors)
     }

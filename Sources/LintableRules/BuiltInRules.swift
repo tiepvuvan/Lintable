@@ -9,8 +9,10 @@ public enum BuiltInRules: RulePack {
         LayoutLifecycleRule.self,
         LocalizedConcatenationRule.self,
         NumberAsTextInLocalizedStringRule.self,
+        UnlabeledImageButtonRule.self,
     ]
     public static let catalogRules: [any CatalogRule.Type] = [
+        MissingPackageStringRule.self,
         MissingPluralFormRule.self,
         MissingTranslationRule.self,
         MissingTranslatorCommentRule.self,

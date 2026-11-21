@@ -20,6 +20,27 @@ Templates/CustomLinter/.lintable.yml
 docs/custom-rules.md
 ```
 
+As built on 2026-11-21, the differences from the list above:
+
+- The binary plugin is in its own package,
+  `Templates/CustomLinter/AcmeLintPlugins/` (`Package.swift` and
+  `Plugins/AcmeLintBinaryPlugin/Plugin.swift`). A binary target whose bundle doesn't
+  exist stops the whole package from resolving, so the prebuilt plugin can't share
+  the template's package; it mirrors `LintablePlugins`, which is separate for the
+  same reason. Its local bundle, `AcmeLintBinary.artifactbundle`, is git-ignored.
+- The template depends on `https://github.com/tiepvuvan/Lintable` from 0.4.0, or on
+  the checkout in `LINTABLE_LOCAL_PATH` when it's set. SwiftPM names a path
+  dependency after its folder, so that folder must be called `Lintable`.
+- `script/custom-linter-smoke-test.sh` runs the template's tests and `acme-lint rules`,
+  then builds `Fixtures/CustomLinterSmokeTest/Source` (a passing and a failing target
+  with the source plugin). With `--with-binary` it also builds `acme-lint` with the
+  bundle scripts and builds `Fixtures/CustomLinterSmokeTest/Binary` with the
+  prebuilt plugin.
+- `script/make-plugins-package.sh` also takes the plugins package and its binary
+  target, so a custom linter publishes its plugins package with it.
+- `RuleDescription` has a settable `documentationURL`, which reports use for a
+  rule's link; it defaults to Lintable's rule pages.
+
 ## Steps
 
 1. **Template package.** A working custom linter: a rule pack with one example

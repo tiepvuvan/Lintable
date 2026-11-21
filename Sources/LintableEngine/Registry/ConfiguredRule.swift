@@ -3,7 +3,7 @@ import LintableKit
 public struct ConfiguredRule: Sendable {
     enum Body: Sendable {
         case swift(@Sendable (LintFile) -> [Violation])
-        case stringCatalog(@Sendable (StringCatalog) -> [Violation])
+        case stringCatalog(@Sendable (StringCatalog, CatalogContext) -> [Violation])
     }
 
     public let id: RuleID
@@ -11,6 +11,7 @@ public struct ConfiguredRule: Sendable {
     public let severity: Severity
     public let releaseSeverity: Severity?
     public let optionsFingerprint: String
+    public let referencedCatalogPaths: [String]
     private let body: Body
 
     init(
@@ -19,6 +20,7 @@ public struct ConfiguredRule: Sendable {
         severity: Severity,
         releaseSeverity: Severity?,
         optionsFingerprint: String,
+        referencedCatalogPaths: [String] = [],
         body: Body
     ) {
         self.id = id
@@ -26,6 +28,7 @@ public struct ConfiguredRule: Sendable {
         self.severity = severity
         self.releaseSeverity = releaseSeverity
         self.optionsFingerprint = optionsFingerprint
+        self.referencedCatalogPaths = referencedCatalogPaths
         self.body = body
     }
 
@@ -48,7 +51,11 @@ public struct ConfiguredRule: Sendable {
     }
 
     public func check(_ catalog: StringCatalog) -> [Violation] {
+        check(catalog, in: CatalogContext(relativePath: catalog.path))
+    }
+
+    public func check(_ catalog: StringCatalog, in context: CatalogContext) -> [Violation] {
         guard case let .stringCatalog(check) = body else { return [] }
-        return check(catalog)
+        return check(catalog, context)
     }
 }

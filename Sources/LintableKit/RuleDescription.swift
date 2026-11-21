@@ -10,6 +10,7 @@ public struct RuleDescription: Sendable {
     public var nonTriggeringExamples: [Example]
     public var howToFix: String
     public var fileKind: FileKind
+    public var documentationURL: String
 
     public init(
         id: RuleID,
@@ -22,7 +23,8 @@ public struct RuleDescription: Sendable {
         triggeringExamples: [Example] = [],
         nonTriggeringExamples: [Example] = [],
         howToFix: String = "",
-        fileKind: FileKind = .swift
+        fileKind: FileKind = .swift,
+        documentationURL: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -35,9 +37,6 @@ public struct RuleDescription: Sendable {
         self.nonTriggeringExamples = nonTriggeringExamples
         self.howToFix = howToFix
         self.fileKind = fileKind
-    }
-
-    public var documentationURL: String {
-        "https://github.com/tiepvuvan/Lintable/blob/main/docs/rules/\(id.rawValue).md"
+        self.documentationURL = documentationURL ?? "https://github.com/tiepvuvan/Lintable/blob/main/docs/rules/\(id.rawValue).md"
     }
 }

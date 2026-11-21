@@ -1,22 +1,45 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ $# -ne 3 ]]; then
-  echo "usage: script/make-plugins-package.sh <bundle-url> <checksum> <output-dir>" >&2
-  echo "  Writes the publishable LintablePlugins package, with the binary target pointing at <bundle-url>." >&2
+usage() {
+  echo "usage: script/make-plugins-package.sh [--plugins-package <dir>] [--binary-target <name>] <bundle-url> <checksum> <output-dir>" >&2
+  echo "  Writes a publishable copy of the plugins package in <dir> (default: LintablePlugins), with its" >&2
+  echo "  binary target <name> (default: LintableBinary) pointing at <bundle-url>." >&2
+}
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SOURCE="$ROOT/LintablePlugins"
+TARGET="LintableBinary"
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --plugins-package) SOURCE="$(cd "${2:?--plugins-package needs a folder}" && pwd)"; shift ;;
+    --binary-target) TARGET="${2:?--binary-target needs a name}"; shift ;;
+    -h|--help) usage; exit 0 ;;
+    -*) usage; exit 2 ;;
+    *) POSITIONAL+=("$1") ;;
+  esac
+  shift
+done
+
+if [[ ${#POSITIONAL[@]} -ne 3 ]]; then
+  usage
   exit 2
 fi
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-URL="$1"
-CHECKSUM="$2"
-OUTPUT="$3"
+URL="${POSITIONAL[0]}"
+CHECKSUM="${POSITIONAL[1]}"
+OUTPUT="${POSITIONAL[2]}"
 
 mkdir -p "$OUTPUT"
-rm -rf "$OUTPUT/Plugins"
-cp -R "$ROOT/LintablePlugins/Plugins" "$OUTPUT/Plugins"
-cp "$ROOT/LintablePlugins/README.md" "$ROOT/LICENSE" "$OUTPUT/"
-sed -E "s#\.binaryTarget\(name: \"LintableBinary\", path: \"LintableBinary\.artifactbundle\"\)#.binaryTarget(name: \"LintableBinary\", url: \"$URL\", checksum: \"$CHECKSUM\")#" \
-  "$ROOT/LintablePlugins/Package.swift" > "$OUTPUT/Package.swift"
+rm -rf "${OUTPUT:?}/Plugins"
+cp -R "$SOURCE/Plugins" "$OUTPUT/Plugins"
+for file in README.md LICENSE; do
+  if [[ -f "$SOURCE/$file" ]]; then
+    cp "$SOURCE/$file" "$OUTPUT/$file"
+  fi
+done
+sed -E "s#\.binaryTarget\(name: \"$TARGET\", path: \"$TARGET\.artifactbundle\"\)#.binaryTarget(name: \"$TARGET\", url: \"$URL\", checksum: \"$CHECKSUM\")#" \
+  "$SOURCE/Package.swift" > "$OUTPUT/Package.swift"
 grep -q "checksum: \"$CHECKSUM\"" "$OUTPUT/Package.swift"
 echo "$OUTPUT"

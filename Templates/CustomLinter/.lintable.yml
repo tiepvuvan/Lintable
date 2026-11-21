@@ -1,0 +1,10 @@
+included:
+  - Sources
+excluded:
+  - "**/.build/**"
+require_reasons: true
+rules:
+  layout_lifecycle:
+    severity: error
+  no_print_in_views:
+    severity: error

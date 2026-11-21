@@ -8,3 +8,6 @@
 DerivedData/
 /LintablePlugins/LintableBinary.artifactbundle/
 /Fixtures/**/.build/
+/Templates/CustomLinter/AcmeLintPlugins/AcmeLintBinary.artifactbundle/
+/Templates/**/Package.resolved
+/Fixtures/**/Package.resolved
